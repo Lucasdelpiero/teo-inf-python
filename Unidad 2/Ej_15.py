@@ -21,7 +21,7 @@ def obtenerAlfabetoMatrizTransicion(mensaje: String):
         act = listaMensaje[i]
         posAnt= alfabeto.index(ant)
         posAct= alfabeto.index(act)
-        matriz[posAct][posAnt] += 1 # importante el orden de ant y act en fila y col 
+        matriz[posAnt][posAct] += 1 # importante el orden de ant y act en fila y col 
         totalCol[posAct] +=1
     # Divide cada columna por el total de veces que aparece (menos la primera letra)
     for i in range(n):
