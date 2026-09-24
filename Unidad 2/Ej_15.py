@@ -21,12 +21,13 @@ def obtenerAlfabetoMatrizTransicion(mensaje: String):
         act = listaMensaje[i]
         posAnt= alfabeto.index(ant)
         posAct= alfabeto.index(act)
-        matriz[posAnt][posAct] += 1 # importante el orden de ant y act en fila y col 
-        totalCol[posAct] +=1
+        matriz[posAct][posAnt] += 1 # importante el orden de ant y act en fila y col 
+        totalCol[posAnt] +=1
+
     # Divide cada columna por el total de veces que aparece (menos la primera letra)
-    for i in range(n):
-        for j in range(n):
-            matriz[i][j] /= totalCol[i]
+    for j in range(n):
+        for i in range(n):
+            matriz[i][j] /= totalCol[j]
   
     return alfabeto, matriz
 
@@ -45,29 +46,33 @@ def simularMensaje(alfabeto: list, matriz: list[list], largo: int):
     for i in range(1, largo):   
         letraAnt = listaPalabra[i - 1] # Segun la letra anterior usa su columna para elegir la sig letra
         letraAntPos = alfabeto.index(letraAnt)  # Para ver que columna de la matriz acumulada recorre
-        rand = random.random()
+        rand = random.randint(0, n - 1)
         j = 0
-        while rand > acum[letraAntPos][j] and j < n:
+        while j < n and rand > acum[letraAntPos][j]:
             j += 1
+        j -= 1
         listaPalabra.append(alfabeto[j])
     palabra = "".join(listaPalabra)
 
     return palabra
 
 #c
-# Si no tiene memoria, todos los valores de una columna deben ser similares (dentro de la tolerancia)
+# Si no tiene memoria, todos los valores de una fila deben ser similares (dentro de la tolerancia)
 # Si tiene memoria, 
 def tieneMemoria(matriz: list[list], tolerancia: float):
     n = len(matriz)
-    tiene = False
-    for j in range(1,n):
-        valor = matriz[0][j] # Compara primer valor de col con el resto
-        for i in range(n):
-            actual = abs(valor - matriz[i][j])
-            if (actual) > tolerancia:
-                return True
 
-    return tiene
+    for i in range(n):
+        menor = mayor = matriz[i][0]
+        for j in range(n):
+            valor = matriz[i][j]
+            if (valor < menor):
+                menor = valor
+            if (valor > mayor):
+                mayor = valor
+        if (mayor - menor > tolerancia):
+            return True    
+    return False
 
 alfabeto, matriz = obtenerAlfabetoMatrizTransicion(mensaje) #a
 print("alfabeto: " + str(alfabeto))
@@ -75,7 +80,7 @@ print("Matriz transicion:")
 print(matriz)
 nuevoMensaje = simularMensaje(alfabeto, matriz, 45) #b
 print("Mensaje simulado: " + nuevoMensaje)
-if tieneMemoria(matriz, 0.05): # c
+if tieneMemoria(matriz, 0.015): # c
     print("Tiene memoria")
 else:
     print("No tiene memoria")

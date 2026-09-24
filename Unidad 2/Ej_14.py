@@ -16,13 +16,14 @@ def obtenerAlfabetoMatrizTransicion(mensaje: String):
         act = listaMensaje[i]
         posAnt= alfabeto.index(ant)
         posAct= alfabeto.index(act)
-        matriz[posAnt][posAct] += 1 # importante el orden de ant y act en fila y col 
-        totalCol[posAct] +=1
+        matriz[posAct][posAnt] += 1 # importante el orden de ant y act en fila y col 
+        totalCol[posAnt] +=1
+
     # Divide cada columna por el total de veces que aparece (menos la primera letra)
-    #print(matriz)
-    for i in range(n):
-        for j in range(n):
-            matriz[i][j] /= totalCol[i]
+    for j in range(n):
+        for i in range(n):
+            matriz[i][j] /= totalCol[j]
+  
     return alfabeto, matriz
 
 def obtenerEstacionario(matriz: list[list]):
