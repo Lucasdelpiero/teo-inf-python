@@ -76,6 +76,23 @@ def gen_palabra(n: int, listaAlf: list[String], listaProb: list[float]):
 
     return palabra
 
+# Si no tiene memoria, todos los valores de una fila deben ser similares (dentro de la tolerancia)
+# Si tiene memoria, 
+def tiene_memoria(matriz: list[list], tolerancia: float):
+    n = len(matriz)
+
+    for i in range(n):
+        menor = mayor = matriz[i][0]
+        for j in range(n):
+            valor = matriz[i][j]
+            if (valor < menor):
+                menor = valor
+            if (valor > mayor):
+                mayor = valor
+        if (mayor - menor > tolerancia):
+            return True    
+    return False
+
 
 ################################################### VECTORES Y MATRICES ###########################################################
 
@@ -131,9 +148,9 @@ def get_vector_estacionario(matriz: list[list], tolerancia: float):
 def mult_matriz_vec(matriz: list[list], vector: list[float]):
     n = len(matriz)
     nuevoValor : list = [0] * n
-    for j in range(n):
-        for i in range(n):
-            nuevoValor[j] += vector[i] * matriz[i][j]
+    for i in range(n):
+        for j in range(n):
+            nuevoValor[i] += matriz[i][j] * vector[j]
     return nuevoValor
 
 # Entropia obtenida usando matriz y estacionario
@@ -210,6 +227,195 @@ def es_compacto(listaProb: list[float], listaCod: list[String]):
 def get_informacion(r: int, prob: float):
     return math.log(1/prob, r)
 
-# Funcion para hacer mas rapido la comprobacion de univoco
-def es_univoco(listaPalabras: list[String]):
-    return get_sumatoria_kraft(listaPalabras) <= 1
+def tiene_prefijo(listaCod: list[String]):
+    for cod in listaCod:
+        if listaCod.index(cod) != -1:
+            return True
+    return False
+
+def es_prefijo(corta, larga):
+    return len(corta) < len(larga) and larga[: len(corta)] == corta
+
+def calcular_restos_sardinas_patterson(conjuntoA, conjuntoB):
+    resultados = set()
+    for a in conjuntoA:
+        for b in conjuntoB:
+            if es_prefijo(a, b):
+                resultados.add(b[len(a) :])
+            elif es_prefijo(b, a):
+                resultados.add(a[len(b) :])
+    return resultados
+
+
+def es_univoco(palabras):
+    if not es_no_singular(palabras):
+        return False
+
+    c = set(palabras)
+    actual = calcular_restos_sardinas_patterson(c, c)
+    vistos = [actual]
+
+    while len(actual) > 0:
+        if actual & c:
+            return False
+        nuevo = calcular_restos_sardinas_patterson(actual, c)
+        if len(nuevo) == 0:
+            return True
+        if nuevo in vistos:
+            return True
+        vistos.append(nuevo)
+        actual = nuevo
+    return True
+
+def comparar_codigos(codA , codB):
+    prefijo = False
+    sobrante = ""
+    codA = list(codA)
+    codB = list(codB)
+    if (len(codA) > len(codB)):
+        if (codA[:len(codB)] == codB):
+            prefijo = True
+            sobrante = "".join(codA[len(codB):]) # devuelve los valores de los sobrantes de la lista y se hace un join
+    else:
+        if (codB[:len(codA)] == codA):
+            prefijo = True
+            sobrante = "".join(codB[len(codA):])  # devuelve los valores de los sobrantes de la lista y se hace un join
+    return sobrante , prefijo
+
+
+def es_no_singular(lista):
+    val = True
+    i = 0
+    while i < len(lista) and val:
+        j = 0
+        while (j < len(lista) and val):
+            if (j != i):
+                if (lista[j] == lista[i]):
+                    val = False
+            j += 1
+        i += 1
+    return val
+
+def es_instantaneo(lista):
+    val = True
+    i = 0
+    S = lista.copy()
+    while (i < len(lista) and val):
+        j = 0
+        while (j < len(lista) and val):
+            if (i != j):
+                sobrante , prefijo = comparar_codigos(S[i] , S[j])
+                if (prefijo):
+                    val = False
+            j += 1
+        i += 1
+    return val
+
+
+# Genera 2 listas de extension de orden n, una con las palabras y otra con las probabilidades
+def get_lista_extension_n(alfabeto, probabilidades, N):
+    extensiones = []
+    probabilidades_ext = []
+    M = len(alfabeto)
+    for i in range(M ** N):
+        numero = i
+        nuevas_extensiones = []
+        nuevas_probabilidades = 1
+        for k in range(N):                         # Cada valor de 0 a (M elevado a N) -1 Se le asigna una combinacion unica
+            posicion = numero % M        
+            nuevas_extensiones.insert(0,alfabeto[posicion])
+            nuevas_probabilidades *= probabilidades[posicion]
+            numero = numero // M # devuelve el cociente menor en entero ej 7 // 2 = 3
+        extensiones.append("".join(nuevas_extensiones))
+        probabilidades_ext.append(nuevas_probabilidades)
+    return extensiones, probabilidades_ext  # ["AB", "AC", "BC"...]   [0.333, 0.222, 0.125, ...]
+
+# Crear funcion de clasificar
+def clasificar(listaCod : list[String]):
+    esUnivoco = es_univoco(listaCod)
+    esNoSingular = es_no_singular(listaCod)
+    esInstantaneo = es_instantaneo(listaCod)
+    print(f"Clasificacion de codigo: {'  '.join(listaCod)}")
+    if esInstantaneo:
+        print("Instantaneo")
+    else:
+        if esUnivoco:
+            print("Univoco")
+        else:
+            if esNoSingular:
+                print("No singular")
+            else:
+                print("Bloque")
+    esCompacto = es_compacto(listaProbabilidades, listaCodigo)     
+    if (esInstantaneo or esUnivoco) and esCompacto:
+        print("Es compacto")
+    else:
+        print("No es compacto")
+
+# Genera 2 listas de extension de orden n, una con las palabras y otra con las probabilidades
+def get_lista_extension_n(alfabeto, probabilidades, N):
+    extensiones = []
+    probabilidades_ext = []
+    M = len(alfabeto)
+    for i in range(M ** N):
+        numero = i
+        nuevas_extensiones = []
+        nuevas_probabilidades = 1
+        for k in range(N):                         # Cada valor de 0 a (M elevado a N) -1 Se le asigna una combinacion unica
+            posicion = numero % M        
+            nuevas_extensiones.insert(0,alfabeto[posicion])
+            nuevas_probabilidades *= probabilidades[posicion]
+            numero = numero // M # devuelve el cociente menor en entero ej 7 // 2 = 3
+        extensiones.append("".join(nuevas_extensiones))
+        probabilidades_ext.append(nuevas_probabilidades)
+    return extensiones, probabilidades_ext  # ["AB", "AC", "BC"...]   [0.333, 0.222, 0.125, ...]
+
+# Imprime matriz de prob en una cuadricula espaciada equitativamente, con lista de palabras opcionales
+def imprimir_matriz(matrizProb : list[list[float]], listaPalabras : list[String] = []):
+    print("{pal:^10}".format( pal = ""), end = "")
+    n = len(matrizProb)
+    if len(listaPalabras) == n:
+        for i in range(n):
+            print("{pal:^10}".format(pal = listaPalabras[i]), end = "")
+    else:
+        print("No se imprimen palabras en cuadricula por error de tamanio")
+    
+    print("")
+    for i in range(n):
+        for j in range(n):
+            if j == 0:
+                    if len(listaPalabras) == n:
+                        print("{pal:^10}".format(pal = listaPalabras[i]), end = "")
+            print("{prob:^10.3f}".format(prob = matrizProb[i][j]), end = "")
+        print("")
+
+# Imprime lista de prob con lista de palabras opcional
+def imprimir_lista(listaProb : list[float], listaPalabras : list[String] = []):
+    n = len(listaProb)
+    if len(listaPalabras) == n:
+        print("{pal:>10}".format(pal = "PALABRA"), end = "")
+        for i in range(n):
+            print("{pal:^10}".format(pal = listaPalabras[i]), end = "")
+        print("")
+    else:
+        print("No se imprimen palabras en cuadricula por error de tamanio")
+    
+    print("{pal:>10}".format(pal = "PROB"), end = "")
+    for i in range(n):
+        print("{prob:^10.3f}".format(prob = listaProb[i]), end = "")
+    print("")
+
+#################################################################################################################################
+#################################################################################################################################
+#################################################################################################################################
+#################################################################################################################################
+#################################################################################################################################
+#################################################################################################################################
+#################################################################################################################################
+#################################################################################################################################
+#################################################################################################################################
+#################################################################################################################################
+#################################################################################################################################
+#################################################################################################################################
+
+
