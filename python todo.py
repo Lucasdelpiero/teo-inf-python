@@ -29,7 +29,7 @@ def get_entropia_equiprob(num: int): # ej: dado de 6, es como si hubiera 6 eleme
 
 
 # Crea listas de alfabeto y probabilidades con caracteres de mensajes
-def get_listas_alf_prob(mensaje: String):  # ej: "casa"
+def get_listas_alf_prob(mensaje: str):  # ej: "casa"
     listaAlf = [] 
     listaProb = []
 
@@ -43,7 +43,7 @@ def get_listas_alf_prob(mensaje: String):  # ej: "casa"
     return [listaAlf, listaProb] # listas = crearListasAlfProb(mensaje)  ;  listaAlf = listas[0] ;    listaProb = listas[1]
 
 # Obtiene lista alfabeto de una LISTA
-def get_lista_alf_lista(lista: list[String]): # [ "001", "01", "012"]
+def get_lista_alf_lista(lista: list[str]): # [ "001", "01", "012"]
     listaAlf = []
     for mensaje in lista:
         for letra in mensaje:
@@ -59,7 +59,7 @@ def get_num(n: int, acum):
             return i
 
 # Genera palabra ALEATORIA de largo N  
-def gen_palabra(n: int, listaAlf: list[String], listaProb: list[float]):
+def gen_palabra(n: int, listaAlf: list[str], listaProb: list[float]):
     palabra = ""
     listaAcum = []
     # Genera lista con probabilidad acumulada de alfabeto
@@ -101,12 +101,12 @@ def tiene_memoria(matriz: list[list], tolerancia: float):
 # Sigue unidad 2
 
 # Matriz transicion obtenida de un mensaje
-def obtener_alfabeto_matriz_transicion(mensaje: String):
+def get_alfabeto_matriz_transicion(mensaje: str):
     listaMensaje = list(mensaje)
     alfabeto = list(dict.fromkeys(mensaje)) #diccionario conserva orden al desarmar mensaje
     n = len(alfabeto)
 
-    matriz = [[0] * n for _ in range(n)] # Inicializo matriz en cero
+    matrizProb = [[0] * n for _ in range(n)] # Inicializo matriz en cero
     totalCol = [0] * n # veces que una letra aparece en la columna
 
     # Recorre lista mensaje, toma el caracter anterior y el actual y suma 1 al valor total
@@ -116,15 +116,15 @@ def obtener_alfabeto_matriz_transicion(mensaje: String):
         act = listaMensaje[i]
         posAnt= alfabeto.index(ant)
         posAct= alfabeto.index(act)
-        matriz[posAct][posAnt] += 1 # importante el orden de ant y act en fila y col 
+        matrizProb[posAct][posAnt] += 1 # importante el orden de ant y act en fila y col 
         totalCol[posAnt] +=1
 
     # Divide cada columna por el total de veces que aparece (menos la primera letra)
     for j in range(n):
         for i in range(n):
-            matriz[i][j] /= totalCol[j]
+            matrizProb[i][j] /= totalCol[j]
   
-    return alfabeto, matriz
+    return alfabeto, matrizProb
 
 
 # Vector estacionario asumiendo inicialmente que son equiprobables
@@ -168,7 +168,7 @@ def get_entropia_matriz(matriz: list[list], estacionario: list[float]):
 # Se usa para inecuacion de kraft, si:    SUMATORIA <= 1 es condificion suficiente para la existencia de 
 # AL MENOS 1 codigo INSTANTANEO de tal longitud
 # Por inecuacion MacMillan si es > 1 entonces no se puede definir un codigo UNIVOCO ni INSTANTANEO
-def get_sumatoria_kraft(listaPalabras: list[String]):
+def get_sumatoria_kraft(listaPalabras: list[str]):
     alfabeto = get_lista_alf_lista(listaPalabras) 
     r = len(alfabeto) # r = cant de alfabeto codigo
     total = 0
@@ -178,13 +178,13 @@ def get_sumatoria_kraft(listaPalabras: list[String]):
     return total
 
 # Funcion auxiliar para obtener el R (cant de simbolos de alfabeto codigo)
-def get_r(listaPalabras: list[String]):
+def get_r(listaPalabras: list[str]):
     alfabeto = get_lista_alf_lista(listaPalabras)
     r = len(alfabeto)
     return r
 
 # Largo PROMEDIO de codigo usando su prob y largo de palabras
-def get_longitud_media_codigo(listaProb: list[float], listaPalabras: list[String]):
+def get_longitud_media_codigo(listaProb: list[float], listaPalabras: list[str]):
     total = 0
     n = len(listaPalabras)
     for i in range(n):
@@ -194,7 +194,7 @@ def get_longitud_media_codigo(listaProb: list[float], listaPalabras: list[String
     return total
 
 # Obtiene la entropia considerando PROB y LARGO de cada palabra codigo
-def get_entropia_ponderada_largo(listaProb: list[float], listaPalabras: list[String]):
+def get_entropia_ponderada_largo(listaProb: list[float], listaPalabras: list[str]):
     total = 0
     n = len(listaPalabras)
     alfabeto = get_lista_alf_lista(listaPalabras) 
@@ -207,7 +207,7 @@ def get_entropia_ponderada_largo(listaProb: list[float], listaPalabras: list[Str
 
 
 # Booleano que devuelve si un codigo es compacto usando su lista de prob y el largo de cada palabra codigo
-def es_compacto(listaProb: list[float], listaCod: list[String]):
+def es_compacto(listaProb: list[float], listaCod: list[str]):
     compacto = True
     n = len(listaCod)
     if not es_univoco(listaCod):
@@ -227,7 +227,7 @@ def es_compacto(listaProb: list[float], listaCod: list[String]):
 def get_informacion(r: int, prob: float):
     return math.log(1/prob, r)
 
-def tiene_prefijo(listaCod: list[String]):
+def tiene_prefijo(listaCod: list[str]):
     for cod in listaCod:
         if listaCod.index(cod) != -1:
             return True
@@ -331,7 +331,7 @@ def get_lista_extension_n(alfabeto, probabilidades, N):
     return extensiones, probabilidades_ext  # ["AB", "AC", "BC"...]   [0.333, 0.222, 0.125, ...]
 
 # Crear funcion de clasificar
-def clasificar(listaCod : list[String]):
+def clasificar(listaCod : list[str], listaProb: list[float]):
     esUnivoco = es_univoco(listaCod)
     esNoSingular = es_no_singular(listaCod)
     esInstantaneo = es_instantaneo(listaCod)
@@ -346,7 +346,7 @@ def clasificar(listaCod : list[String]):
                 print("No singular")
             else:
                 print("Bloque")
-    esCompacto = es_compacto(listaProbabilidades, listaCodigo)     
+    esCompacto = es_compacto(listaProb, listaCod)     
     if (esInstantaneo or esUnivoco) and esCompacto:
         print("Es compacto")
     else:
@@ -371,7 +371,7 @@ def get_lista_extension_n(alfabeto, probabilidades, N):
     return extensiones, probabilidades_ext  # ["AB", "AC", "BC"...]   [0.333, 0.222, 0.125, ...]
 
 # Imprime matriz de prob en una cuadricula espaciada equitativamente, con lista de palabras opcionales
-def imprimir_matriz(matrizProb : list[list[float]], listaPalabras : list[String] = []):
+def imprimir_matriz(matrizProb : list[list[float]], listaPalabras : list[str] = []):
     print("{pal:^10}".format( pal = ""), end = "")
     n = len(matrizProb)
     if len(listaPalabras) == n:
@@ -390,7 +390,7 @@ def imprimir_matriz(matrizProb : list[list[float]], listaPalabras : list[String]
         print("")
 
 # Imprime lista de prob con lista de palabras opcional
-def imprimir_lista(listaProb : list[float], listaPalabras : list[String] = []):
+def imprimir_lista(listaProb : list[float], listaPalabras : list[str] = []):
     n = len(listaProb)
     if len(listaPalabras) == n:
         print("{pal:>10}".format(pal = "PALABRA"), end = "")
@@ -417,5 +417,4 @@ def imprimir_lista(listaProb : list[float], listaPalabras : list[String] = []):
 #################################################################################################################################
 #################################################################################################################################
 #################################################################################################################################
-
 
