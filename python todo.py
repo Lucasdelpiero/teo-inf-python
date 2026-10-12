@@ -1,4 +1,5 @@
 from math import log2
+from math import log
 import math
 import random
 
@@ -21,6 +22,12 @@ def get_entropia_lista_prob(listaProb: list[float]):
 
     for prob in listaProb:
         total += prob * log2(1/prob)
+    return total
+
+def get_entropia_tamanio_r(listaProb: list[float], tamanioAlfabeto: int):
+    total = 0
+    for prob in listaProb:
+        total += prob * log(1/prob, tamanioAlfabeto)
     return total
 
 # Entropia de un numero si su prob es equiprobable
@@ -328,7 +335,7 @@ def get_lista_extension_n(alfabeto, probabilidades, N):
             numero = numero // M # devuelve el cociente menor en entero ej 7 // 2 = 3
         extensiones.append("".join(nuevas_extensiones))
         probabilidades_ext.append(nuevas_probabilidades)
-    return extensiones, probabilidades_ext  # ["AB", "AC", "BC"...]   [0.333, 0.222, 0.125, ...]
+    return probabilidades_ext, extensiones  # ["AB", "AC", "BC"...]   [0.333, 0.222, 0.125, ...]
 
 # Crear funcion de clasificar
 def clasificar(listaCod : list[str], listaProb: list[float]):
@@ -368,7 +375,7 @@ def get_lista_extension_n(alfabeto, probabilidades, N):
             numero = numero // M # devuelve el cociente menor en entero ej 7 // 2 = 3
         extensiones.append("".join(nuevas_extensiones))
         probabilidades_ext.append(nuevas_probabilidades)
-    return extensiones, probabilidades_ext  # ["AB", "AC", "BC"...]   [0.333, 0.222, 0.125, ...]
+    return probabilidades_ext, extensiones   # ["AB", "AC", "BC"...]   [0.333, 0.222, 0.125, ...]
 
 # Imprime matriz de prob en una cuadricula espaciada equitativamente, con lista de palabras opcionales
 def imprimir_matriz(matrizProb : list[list[float]], listaPalabras : list[str] = []):
@@ -404,6 +411,83 @@ def imprimir_lista(listaProb : list[float], listaPalabras : list[str] = []):
     for i in range(n):
         print("{prob:^10.3f}".format(prob = listaProb[i]), end = "")
     print("")
+
+####################################################### UNIDAD 4 ##################################################################
+
+# Cuando la longitud de orden n del codigo esta entre la entropia de la fuente y la entropia de la fuente
+# Si H <= Ln/N <= H + 1
+def primer_teorema_shanon(listaProb : list[float], listaCodOrdenN: list[str], N: int):
+    longitudMedia = get_longitud_media_codigo(listaProb, listaCodOrdenN) 
+    print("longitud: " + str(longitudMedia))
+    r = get_r(listaCodOrdenN)
+    entropia =  get_entropia_tamanio_r(listaProb, r) 
+    print("entropia: " + str(entropia/ N))
+    valor = (entropia / N <= longitudMedia / N and longitudMedia / N < entropia / N + 1 / N)
+    return valor
+
+def ordenar_por_probabilidad(listaProb: list[float],
+                             listaCod: list[str]) -> tuple[list[float], list[str]]:
+    pares = list(zip(listaProb, listaCod))
+    pares.sort(key=lambda par: par[0], reverse=True)
+
+    listaProbOrdenada = [par[0] for par in pares]
+    listaCodOrdenada = [par[1] for par in pares]
+
+    return listaProbOrdenada, listaCodOrdenada
+
+# Dada una funcion de base r se calcula su rendimiento y redundancia, devolviendo ambas
+def calcula_rendimiento_redundancia(listaProb: list[float], listaCod: list[str]):
+    r = get_r(listaCod)
+    entropia = get_entropia_tamanio_r(listaProb, r)
+    longitud = get_longitud_media_codigo(listaProb, listaCod)
+    
+    rendimiento  = entropia / longitud
+    redundancia = 1 - rendimiento
+
+    return rendimiento, redundancia
+
+def distancia_palabras_hamming(cod1: str, cod2: str) -> int:
+    distancia = 0
+    for i in range(len(cod1)):
+        if cod1[i] != cod2[i]:
+            distancia += 1
+
+    return distancia
+
+def get_min_distancia_deteccion_correccion_hamming(listaCod: list[str]) -> tuple[int, int, int]:
+    distanciaMin : int = 99999
+    n = len(listaCod)
+    for i in range(n):
+        for j in range(n):
+            if(i != j):
+                distancia = distancia_palabras_hamming(listaCod[i], listaCod[j])
+                if distancia < distanciaMin:
+                    distanciaMin = distancia
+    deteccion : int = distanciaMin - 1
+    correccion : int = math.floor(( (distanciaMin - 1) / 2 ))
+    return distanciaMin, deteccion, correccion
+
+def imprimir_hamming(listas: tuple[int, int, int]):
+    print("Distancia: " + str(listas[0]))
+    print("Detecta: " + str(listas[1]))
+    print("Corrige: " + str(listas[2]))
+
+# Cuenta la cantidad de "1" en un string de binarios y devuelve si tiene cantidad par o no
+def tiene_paridad_par(bin: str):
+    cantUnos = 0
+    for bit in bin:
+        if bit == "1":
+            cantUnos += 1
+    return (cantUnos % 2) == 0
+
+# Convierte un caracter en un binario con el ultimo bit como bit de paridad
+def get_caracter_a_binario(car: str):
+    binario = bin(ord(car))[2:]
+    if tiene_paridad_par(binario):
+        binario += "0"
+    else:
+        binario += "1"
+    return binario
 
 #################################################################################################################################
 #################################################################################################################################
