@@ -489,6 +489,46 @@ def get_caracter_a_binario(car: str):
         binario += "1"
     return binario
 
+
+####################################################### UNIDAD 6 ##################################################################
+
+def get_matriz_canal(entrada: str, salida: str):
+    listas_entrada = get_listas_alf_prob(entrada)
+    alfabeto_entrada = listas_entrada[0]
+
+    listas_salida = get_listas_alf_prob(salida)
+    alfabeto_salida = listas_salida[0]
+
+    N = len(alfabeto_entrada)
+    M = len(alfabeto_salida)
+    matriz = [[0 for _ in range(M)] for _ in range(N)]
+
+    for i in range(len(entrada)):
+        simbolo_entrada = entrada[i]
+        simbolo_salida = salida[i]
+
+        indice_entrada = alfabeto_entrada.index(simbolo_entrada)
+        indice_salida = alfabeto_salida.index(simbolo_salida)
+
+        matriz[indice_entrada][indice_salida] +=  1
+
+    for i in range(len(alfabeto_entrada)):
+        for j in range(len(alfabeto_salida)):
+            entrada_apariciones = (list(entrada)).count(alfabeto_entrada[i])
+            matriz[i][j] /= entrada_apariciones
+
+    return matriz
+
+def get_probabilidades_salida(matriz: list[list[float]], prob_entrada: list[float]):
+    prob_salida = [0] * len(matriz[0])
+    N = len(matriz[0])
+    M = len(matriz)
+
+    for j in range(M):
+        for i in range(N):
+            prob_salida[j] += matriz[i][j] * prob_entrada[i]
+    return prob_salida
+
 #################################################################################################################################
 #################################################################################################################################
 #################################################################################################################################
@@ -501,4 +541,5 @@ def get_caracter_a_binario(car: str):
 #################################################################################################################################
 #################################################################################################################################
 #################################################################################################################################
+
 
