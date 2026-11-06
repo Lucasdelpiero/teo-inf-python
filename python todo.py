@@ -472,8 +472,9 @@ def imprimir_hamming(listas: tuple[int, int, int]):
     print("Detecta: " + str(listas[1]))
     print("Corrige: " + str(listas[2]))
 
-# Cuenta la cantidad de "1" en un string de binarios y devuelve si tiene cantidad par o no
+
 def tiene_paridad_par(bin: str):
+    """ Cuenta la cantidad de "1" en un string de binarios y devuelve si tiene cantidad par o no """
     cantUnos = 0
     for bit in bin:
         if bit == "1":
@@ -489,6 +490,137 @@ def get_caracter_a_binario(car: str):
         binario += "1"
     return binario
 
+
+# Ejemplo de uso abajo
+def a_bytearray(*bytes_bin: str) -> bytearray:
+    """Convierte cadenas de bits ('00100001', ...) a bytearray."""
+    return bytearray(int(b, 2) for b in bytes_bin)
+ 
+ # Cada string es una fila de la matriz 
+EJEMPLOS = {
+    "a": a_bytearray("00100001", "10000111", "10000010", "10100110", "10000010"),
+    "b": a_bytearray("00101101", "10011001", "10001010", "10011100", "10000010"),
+    "c": a_bytearray("00101010", "10000010", "10011010", "10011111", "10100101"),
+    "d": a_bytearray("00010100", "10010000", "10011110", "10011001", "10000010"),
+    "e": a_bytearray("00110101", "10011010", "10101011", "10100100", "10000010"),
+    "f": a_bytearray("00001001", "10101001", "10100101", "10001011", "10100110"),
+    "g": a_bytearray("00011101", "10010011", "10011101", "10001100", "10011111"),
+    "h": a_bytearray("00111110", "10000111", "10010000", "10000010", "10101010"),
+}
+
+def bits_a_bytearray(bits: str) -> bytearray:
+    """Convierte una cadena de unos y ceros en un bytearray (8 bits por byte).
+    Ignora espacios y saltos de línea."""
+    bits = "".join(bits.split())
+    if set(bits) - {"0", "1"}:
+        raise ValueError("La cadena solo puede tener 0 y 1 (y espacios)")
+    if len(bits) % 8:
+        raise ValueError(f"La cantidad de bits ({len(bits)}) no es múltiplo de 8")
+    return bytearray(int(bits[i:i + 8], 2) for i in range(0, len(bits), 8))
+ 
+
+def bits_a_bytearray(bits: str) -> bytearray:
+    """Convierte una cadena de unos y ceros en un bytearray (8 bits por byte).
+    Ignora espacios y saltos de línea."""
+    bits = "".join(bits.split())
+    if set(bits) - {"0", "1"}:
+        raise ValueError("La cadena solo puede tener 0 y 1 (y espacios)")
+    if len(bits) % 8:
+        raise ValueError(f"La cantidad de bits ({len(bits)}) no es múltiplo de 8")
+    return bytearray(int(bits[i:i + 8], 2) for i in range(0, len(bits), 8))
+ 
+ 
+def bytes_a_matriz(datos) -> list[list[int]]:
+    """bytes -> lista de cadenas binarias -> matriz de enteros (0/1)."""
+    cadenas = [format(b, "08b") for b in datos]
+    return [[int(c) for c in cadena] for cadena in cadenas]
+ 
+ 
+def matriz_a_bytes(matriz: list[list[int]]) -> bytearray:
+    """Matriz de bits -> lista de cadenas binarias -> bytearray."""
+    cadenas = ["".join(str(bit) for bit in fila) for fila in matriz]
+    return bytearray(int(cadena, 2) for cadena in cadenas)
+ 
+ 
+# --------------------------------------------------------------------- paridad
+ 
+def paridad(bits) -> int:
+    """Bit que completa paridad par: 1 si hay cantidad impar de unos."""
+    return sum(bits) % 2
+ 
+ 
+def filas_incorrectas(matriz) -> list[int]:
+    """Índices de las filas con paridad impar (error de VRC)."""
+    return [i for i, fila in enumerate(matriz) if paridad(fila)]
+ 
+ 
+def columnas_incorrectas(matriz) -> list[int]:
+    """Índices de las columnas con paridad impar (error de LRC / cruzada)."""
+    return [j for j, columna in enumerate(zip(*matriz)) if paridad(columna)]
+ 
+ 
+# ---------------------------------------------------------------- codificación
+ 
+def get_string_a_bytearray(texto: str) -> bytearray:
+    """Genera el bytearray con el LRC al inicio y cada carácter con su VRC."""
+    filas = []
+    for c in texto:
+        codigo = ord(c)
+        if codigo > 127:
+            raise ValueError(f"El carácter {c!r} no es ASCII (7 bits)")
+        bits = [int(b) for b in format(codigo, "07b")]
+        bits.append(paridad(bits))                      # VRC en el bit 0
+        filas.append(bits)
+ 
+    # LRC: paridad de cada columna (la última columna, la de los VRC,
+    # da la paridad cruzada)
+    lrc = [paridad(columna) for columna in zip(*filas)] if filas else [0] * 8
+    return matriz_a_bytes([lrc] + filas)
+ 
+ 
+def verificar(datos) -> bool:
+    """True si todas las filas y todas las columnas tienen paridad par."""
+    matriz = bytes_a_matriz(datos)
+    return bool(matriz) and not filas_incorrectas(matriz) and not columnas_incorrectas(matriz)
+ 
+ 
+# ---------------------------------------------------------------- decodificación
+ 
+def corregir_matriz_mensaje(matriz: list[list[int]]):
+    """
+    Devuelve la matriz corregida, o None si no se puede corregir.
+    Solo se corrige un error de un único bit: la fila con VRC incorrecto y la
+    columna con LRC incorrecto se cruzan en el bit erróneo.
+    """
+    matriz = [fila[:] for fila in matriz]               # copia
+    filas_mal = filas_incorrectas(matriz)
+    columnas_mal = columnas_incorrectas(matriz)
+ 
+    if not filas_mal and not columnas_mal:
+        return matriz                                   # sin errores
+    if len(filas_mal) == 1 and len(columnas_mal) == 1:
+        matriz[filas_mal[0]][columnas_mal[0]] ^= 1      # invierte el bit erróneo
+        return matriz
+    return None                                         # no corregible
+ 
+ 
+def get_bytearray_a_string(datos) -> str:
+    """Devuelve el mensaje original, o "" si no se pueden corregir los errores."""
+    matriz = bytes_a_matriz(datos)
+    if not matriz:
+        return ""
+    matriz = corregir_matriz_mensaje(matriz)
+    if matriz is None:
+        return ""
+ 
+    # Se descarta la fila del LRC (fila 0) y el bit de paridad (último bit)
+    return "".join(chr(int("".join(map(str, fila[:7])), 2)) for fila in matriz[1:])
+
+
+def imprimir_bytearray_matriz(datos: bytearray):
+    """ Imprime bytearray en forma de matriz """
+    for fila in bytes_a_matriz(datos):
+        print("  ", "".join(map(str, fila)))
 
 ####################################################### UNIDAD 6 ##################################################################
 
