@@ -1,5 +1,6 @@
 from math import log2
 from math import log
+from math import exp
 import math
 import random
 
@@ -40,13 +41,12 @@ def get_listas_alf_prob(mensaje: str):  # ej: "casa"
     listaAlf = [] 
     listaProb = []
 
-    for letra in mensaje:
-        if letra not in listaAlf:
-            listaAlf.append(letra)
+    listaAlf = sorted(set(mensaje)) # Asi siempre aparecen ordenadas
 
     for letra in listaAlf:
         listaProb.append(mensaje.count(letra)/len(mensaje))
 
+        
     return [listaAlf, listaProb] # listas = crearListasAlfProb(mensaje)  ;  listaAlf = listas[0] ;    listaProb = listas[1]
 
 # Obtiene lista alfabeto de una LISTA
@@ -493,11 +493,8 @@ def get_caracter_a_binario(car: str):
 ####################################################### UNIDAD 6 ##################################################################
 
 def get_matriz_canal(entrada: str, salida: str):
-    listas_entrada = get_listas_alf_prob(entrada)
-    alfabeto_entrada = listas_entrada[0]
-
-    listas_salida = get_listas_alf_prob(salida)
-    alfabeto_salida = listas_salida[0]
+    alfabeto_entrada = sorted(set(entrada))
+    alfabeto_salida = sorted(set(salida))
 
     N = len(alfabeto_entrada)
     M = len(alfabeto_salida)
@@ -519,15 +516,351 @@ def get_matriz_canal(entrada: str, salida: str):
 
     return matriz
 
-def get_probabilidades_salida(matriz: list[list[float]], prob_entrada: list[float]):
-    prob_salida = [0] * len(matriz[0])
-    N = len(matriz[0])
-    M = len(matriz)
 
-    for j in range(M):
-        for i in range(N):
-            prob_salida[j] += matriz[i][j] * prob_entrada[i]
-    return prob_salida
+# Usa las prob a priori y matriz transicion del canal/prob condicional y devuelve una lista con las prob de salida
+def get_lista_probabilidades_salida(prob_a_priori : list[float], matriz_transicion_canal: list[list[float]]):
+    lista_salida : list[float] = []
+    r = len(prob_a_priori)
+    m = len(matriz_transicion_canal[0])
+    for j in range(m):
+        lista_salida.append(0)
+        for i in range(r):
+            lista_salida[j] += prob_a_priori[i] * matriz_transicion_canal[i][j]
+    return lista_salida
+
+
+# Usa las prob a priori y matriz transicion canal para obtener la matriz prob a priori
+def get_matriz_probabilidades_a_posteriori(prob_a_priori : list[float], matriz_transicion_canal: list[list[float]]):
+    r = len(prob_a_priori)
+    m = len(matriz_transicion_canal[0])
+
+    # Denominador: denominadores[j] = suma sobre k de P(b_j|a_k) * P(a_k)
+    denominadores = []
+    for j in range(m):
+        suma = 0
+        for k in range(r):
+            suma += matriz_transicion_canal[k][j] * prob_a_priori[k]
+        denominadores.append(suma)
+
+    # Teorema de Bayes
+    matriz_prob_posteriori = []
+    for i in range(r):
+        fila = []
+        for j in range(m):
+            fila.append(matriz_transicion_canal[i][j] * prob_a_priori[i] / denominadores[j])
+        matriz_prob_posteriori.append(fila)
+
+    return matriz_prob_posteriori
+
+# Prob simultaneo
+# Prob conjunta: P(a,b) = P(ai/bj).P(bj) = P(bj/ai).P(ai)
+def get_matriz_prob_conjunta(prob_a_priori : list[float], matriz_transicion_canal: list[list[float]]):
+    """
+    prob_a_priori:   lista de largo r, p_a[i] = P(a_i)
+    matriz_transicion_canal: matriz (r x m), canal[i][j] = P(b_j | a_i)
+    Devuelve: matriz (r x m), resultado[i][j] = P(a_i, b_j)
+    """
+    r = len(prob_a_priori)
+    m = len(matriz_transicion_canal[0])
+
+    matriz_prob_conjunta = []
+    for i in range(r):
+        fila = []
+        for j in range(m):
+            fila.append(matriz_transicion_canal[i][j] * prob_a_priori[i])
+        matriz_prob_conjunta.append(fila)
+
+    return matriz_prob_conjunta
+
+# Representa el numero medio de bits necesarios para definir la entrada tras la recepcion y lectura del simbolo bj
+def get_entropia_a_posteriori(prob_a_priori: list[float], matriz_transicion_canal: list[list[float]]):
+    """
+    Devuelve la lista [H(A|b_1), H(A|b_2), ...] en bits.
+ 
+    prob_a_priori: lista con P(a_i).
+    matriz_transicion_canal: una fila por cada a_i, con P(b_j | a_i).
+    """
+    n_a = len(prob_a_priori)
+    n_b = len(matriz_transicion_canal[0])
+    entropias = []
+ 
+    for j in range(n_b):
+        # Conjunta P(a_i, b_j) y marginal P(b_j)
+        conjunta = [prob_a_priori[i] * matriz_transicion_canal[i][j] for i in range(n_a)]
+        prob_b = sum(conjunta)
+ 
+        # Posterior P(a_i | b_j) y su entropía
+        posterior = [c / prob_b for c in conjunta]
+        entropias.append(-sum(p * log2(p) for p in posterior if p > 0))
+ 
+    return entropias
+
+# Entropia de salida H(B): entropia de la distribucion de probabilidades de salida
+def get_entropia_salida(prob_a_priori: list[float], matriz_transicion_canal: list[list[float]]):
+    prob_b = get_lista_probabilidades_salida(prob_a_priori, matriz_transicion_canal)
+    return get_entropia_lista_prob(prob_b)
+
+# Mide la informacion que queda en A despues de observar B, repesenta la perdida de informacion sobre A causada por el canal
+# H(A/B)
+def get_ruido(prob_a_priori: list[float], matriz_transicion_canal: list[list[float]]):
+    prob_b = get_lista_probabilidades_salida(prob_a_priori, matriz_transicion_canal)
+    h_posteriori = get_entropia_a_posteriori(prob_a_priori, matriz_transicion_canal)
+    return sum(pb * h for pb, h in zip(prob_b, h_posteriori))
+
+# Incertidumbre de la salida conociendo la entrada
+# H(B/A)
+def get_perdida(prob_a_priori: list[float], matriz_transicion_canal: list[list[float]]):
+    total = 0
+    for i, fila in enumerate(matriz_transicion_canal):
+        h_fila = sum(p * log2(1 / p) for p in fila if p > 0)
+        total += prob_a_priori[i] * h_fila
+    return total
+
+# Es la suma H(A,B) = de H(A) + H(B/A) = H(B) + H(B/A) = H(B,A)
+def get_entropia_afin(prob_a_priori, matriz_transicion_canal):
+    conjunta = get_matriz_prob_conjunta(prob_a_priori, matriz_transicion_canal)
+    return sum(p * log2(1 / p) for fila in conjunta for p in fila if p > 0)
+
+
+# Informacion mutua: I(A;B) = H(A) - H(A|B)
+def get_informacion_mutua(prob_a_priori: list[float], matriz_transicion_canal: list[list[float]]):
+    return get_entropia_lista_prob(prob_a_priori) - get_ruido(prob_a_priori, matriz_transicion_canal)
+
+# Canal sin ruido: un solo elemento distinto de cero en cada columna
+# Si H(A/B) = 0 luego se cumple que I(A,B) = H(A)
+def es_canal_sin_ruido(prob: list[float], matriz: list[list[float]]):
+    ruido = get_ruido(prob, matriz)
+    return ruido == 0
+
+# Canal determinante: un solo elemento distinto de cero en cada fila
+# Si H(B/A) = 0 luego se cumple que I(A,B) = H(B)
+def es_canal_determinante(prob: list[float], matriz: list[list[float]]):
+    perdida = get_perdida(prob, matriz)
+    return perdida == 0
+
+# De un canal P y un canal determinante se devuelve un canal reducido
+def get_canal_compuesto(canal1: list[list[float]], canal2: list[list[float]]):
+    n = len(canal1)
+    m = len(canal1[0])
+    k = len(canal2[0])
+
+    if len(canal2) != m:
+        print("Error no se puede devolver canal reducido")
+        return []
+
+    resultado = [[0.0] * k for _ in range(n)]
+    for i in range(n):
+        for j in range(k):
+            for y in range(m):
+                resultado[i][j] += canal1[i][y] * canal2[y][j]
+
+    return resultado
+
+def validar_columnas(canal, j1, j2):
+    m = len(canal[0])
+    if j1 == j2:
+        raise ValueError("Los índices de las columnas deben ser distintos.")
+    if not (0 <= j1 < m and 0 <= j2 < m):
+        raise ValueError(f"Los índices deben estar entre 0 y {m - 1}.")
+
+
+def es_reduccion_suficiente(canal, j1, j2, tol=1e-9):
+    """
+    Verifica si las columnas j1 y j2 se pueden combinar (sumar) en una
+    reducción suficiente, es decir, sin perder información sobre la entrada.
+
+    Condición: las columnas son proporcionales, o sea que para todo par de
+    filas i, l se cumple canal[i][j1] * canal[l][j2] == canal[l][j1] * canal[i][j2].
+    Equivale a que P(x|y1) = P(x|y2) para todo x.
+    """
+    validar_columnas(canal, j1, j2)
+    n = len(canal)
+
+    for i in range(n):
+        for l in range(i + 1, n):
+            if abs(canal[i][j1] * canal[l][j2] - canal[l][j1] * canal[i][j2]) > tol:
+                return False
+    return True
+
+
+def canal_determinante(canal, j1, j2):
+    """
+    Genera la matriz del canal determinante que combina las columnas j1 y j2.
+
+    Es una matriz de m filas (salidas originales) x (m-1) columnas (salidas
+    reducidas). La columna combinada queda en la posición min(j1, j2) y la
+    otra columna se elimina; el resto conserva su orden.
+    Cada fila tiene un único 1 (canal determinístico).
+    """
+    validar_columnas(canal, j1, j2)
+    m = len(canal[0])
+    menor, mayor = min(j1, j2), max(j1, j2)
+
+    det = [[0.0] * (m - 1) for _ in range(m)]
+    for c in range(m):
+        if c == mayor:
+            destino = menor
+        elif c > mayor:
+            destino = c - 1
+        else:
+            destino = c
+        det[c][destino] = 1.0
+    return det
+
+
+def get_reduccion_suficiente(canal, tol=1e-9):
+    """
+    Reduce el canal lo más posible combinando columnas mientras exista
+    algún par que sea una reducción suficiente.
+
+    Devuelve (canal_reducido, determinante_total), donde
+    canal_reducido = canal en serie con determinante_total.
+    """
+    actual = [fila[:] for fila in canal]
+    m = len(actual[0])
+    det_total = [[1.0 if i == j else 0.0 for j in range(m)] for i in range(m)]
+
+    while True:
+        m = len(actual[0])
+        combinado = False
+        for j1 in range(m):
+            for j2 in range(j1 + 1, m):
+                if es_reduccion_suficiente(actual, j1, j2, tol):
+                    det = canal_determinante(actual, j1, j2)
+                    actual = get_canal_compuesto(actual, det)
+                    det_total = get_canal_compuesto(det_total, det)
+                    combinado = True
+                    break
+            if combinado:
+                break
+        if not combinado:
+            return actual, det_total
+
+
+# Valor maximo al cual la informacion puede ser transmitida por un canal
+def get_capacidad(canal: list[list[float]], tol=1e-12, max_iter=10000):
+    n, m = len(canal), len(canal[0])
+    prob_entrada = [1 / n] * n
+
+    for _ in range(max_iter):
+        py = [sum(prob_entrada[i] * canal[i][j] for i in range(n)) for j in range(m)]
+
+        # Divergencia D(P(.|x) || p(y)) en nats para cada entrada
+        d = []
+        for i in range(n):
+            s = 0.0
+            for j in range(m):
+                if canal[i][j] > 0:
+                    s += canal[i][j] * log(canal[i][j] / py[j])
+            d.append(s)
+
+        nuevo = [prob_entrada[i] * exp(d[i]) for i in range(n)]
+        total = sum(nuevo)
+        nuevo = [v / total for v in nuevo]
+
+        if max(abs(nuevo[i] - px[i]) for i in range(n)) < tol:
+            px = nuevo
+            break
+        prob_entrada = nuevo
+
+    return get_informacion_mutua_matriz_lista(canal, prob_entrada), prob_entrada
+
+
+# Variante auxiliar para informacion mutua entre matriz y lista
+def get_informacion_mutua_matriz_lista(canal: list[list[float]], prob_entrada: list[float]):
+    n, m = len(canal), len(canal[0])
+    py = [sum(prob_entrada[i] * canal[i][j] for i in range(n)) for j in range(m)]
+    info = 0.0
+    for i in range(n):
+        for j in range(m):
+            if prob_entrada[i] > 0 and canal[i][j] > 0:
+                info += prob_entrada[i] * canal[i][j] * log2(canal[i][j] / py[j])
+    return info
+
+def es_canal_uniforme(canal: list[list[float]], tol=1e-9):
+    """
+    Devuelve True si todas las filas del canal son permutaciones entre sí,
+    es decir, si todas contienen los mismos valores en distinto orden.
+    """
+    base = sorted(canal[0])
+    for fila in canal[1:]:
+        otra = sorted(fila)
+        for a, b in zip(base, otra):
+            if abs(a - b) > tol:
+                return False
+    return True
+
+
+# Calcula capacidad solo si es un canal: determinanto / sin ruido / uniforme
+def get_capacidad_si_det_sinruido_uni(canal: list[list[float]]):
+    if ( es_canal_determinante(canal) or es_canal_sin_ruido(canal) or es_canal_uniforme):
+        return get_capacidad(canal)
+    return 0
+
+def capacidad_binaria(canal, paso):
+    """
+    Estima la capacidad de un canal binario (2 entradas) recorriendo las
+    probabilidades a priori p(x0) = 0, paso, 2*paso, ..., 1 y calculando la
+    informacion mutua para cada una.
+
+    canal: matriz de 2 filas (entradas 0 y 1) x m columnas (salidas)
+    paso: separacion entre valores consecutivos de p(x0), entre 0 y 1
+
+    Devuelve (capacidad_estimada, p), donde p es la probabilidad a priori
+    p(x0) para la cual la informacion mutua es maxima. La distribucion de
+    entrada completa es [p, 1 - p].
+    """
+    if len(canal) != 2:
+        raise ValueError("El canal debe ser binario: 2 filas (2 entradas).")
+    if not (0 < paso <= 1):
+        raise ValueError("El paso debe estar en el intervalo (0, 1].")
+
+    cantidad = int(round(1 / paso))
+    mejor_info = -1.0
+    mejor_p = 0.0
+
+    for k in range(cantidad + 1):
+        p = min(k * paso, 1.0)
+        info = get_informacion_mutua_matriz_lista(canal, [p, 1 - p])
+        if info > mejor_info:
+            mejor_info = info
+            mejor_p = p
+
+    return mejor_info, mejor_p
+
+
+def get_probabilidad_error_canal(canal, prob_entrada):
+    """
+    Calcula la probabilidad de error del canal usando la regla de decision
+    de maxima verosimilitud (ML).
+
+    prob_entrada: lista con las probabilidades a priori p(x_i)
+    canal: matriz de n filas (entradas) x m columnas (salidas), canal[i][j] = P(y_j | x_i)
+
+    Regla ML: para cada salida y_j se decide la entrada x_i que maximiza
+    P(y_j | x_i), sin usar las probabilidades a priori.
+
+    Devuelve (probabilidad_de_error, decision), donde decision[j] es la
+    entrada elegida cuando se recibe la salida y_j.
+    """
+    n, m = len(canal), len(canal[0])
+
+    if len(prob_entrada) != n:
+        raise ValueError(
+            f"La lista de probabilidades a priori tiene {len(prob_entrada)} valores "
+            f"y el canal tiene {n} entradas."
+        )
+    if abs(sum(prob_entrada) - 1.0) > 1e-9:
+        raise ValueError("Las probabilidades a priori deben sumar 1.")
+
+    p_acierto = 0.0
+    decision = []
+    for j in range(m):
+        i_ml = max(range(n), key=lambda i: canal[i][j])
+        decision.append(i_ml)
+        p_acierto += prob_entrada[i_ml] * canal[i_ml][j]
+
+    return 1 - p_acierto, decision
 
 #################################################################################################################################
 #################################################################################################################################
@@ -541,5 +874,6 @@ def get_probabilidades_salida(matriz: list[list[float]], prob_entrada: list[floa
 #################################################################################################################################
 #################################################################################################################################
 #################################################################################################################################
+
 
 
