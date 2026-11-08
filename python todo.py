@@ -929,7 +929,7 @@ def get_capacidad_si_det_sinruido_uni(canal: list[list[float]]):
         return get_capacidad(canal)
     return 0
 
-def capacidad_binaria(canal, paso):
+def capacidad_binaria(canal: list[list[float]], paso: int = 0.0001):
     """
     Estima la capacidad de un canal binario (2 entradas) recorriendo las
     probabilidades a priori p(x0) = 0, paso, 2*paso, ..., 1 y calculando la
@@ -961,7 +961,7 @@ def capacidad_binaria(canal, paso):
     return mejor_info, mejor_p
 
 
-def get_probabilidad_error_canal(canal, prob_entrada):
+def get_probabilidad_error_canal(canal: list[list[float]], prob_entrada: list[float]):
     """
     Calcula la probabilidad de error del canal usando la regla de decision
     de maxima verosimilitud (ML).
