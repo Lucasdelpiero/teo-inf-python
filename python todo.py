@@ -622,6 +622,183 @@ def imprimir_bytearray_matriz(datos: bytearray):
     for fila in bytes_a_matriz(datos):
         print("  ", "".join(map(str, fila)))
 
+####################################################### UNIDAD 5 ##################################################################
+
+def get_codificacion_huffman(probabilidades: list[float]):
+    """Devuelve la lista de códigos binarios de Huffman."""
+    n = len(probabilidades)
+    if n == 0:
+        return []
+    if n == 1:
+        return ["0"]
+ 
+    codigos = [""] * n
+    # Cada nodo es (probabilidad, [índices de símbolos del grupo])
+    nodos = [(p, [i]) for i, p in enumerate(probabilidades)]
+ 
+    while len(nodos) > 1:
+        # Ordenar por probabilidad creciente: los dos menores quedan al principio
+        nodos.sort(key=lambda nodo: nodo[0])
+        p1, grupo1 = nodos.pop(0)  # menor probabilidad
+        p2, grupo2 = nodos.pop(0)  # siguiente menor
+        for i in grupo1:
+            codigos[i] = "0" + codigos[i]
+        for i in grupo2:
+            codigos[i] = "1" + codigos[i]
+        nodos.append((p1 + p2, grupo1 + grupo2))
+ 
+    return codigos
+ 
+ 
+def get_codificacion_shannon_fano(probabilidades: list[float]):
+    """Devuelve la lista de códigos binarios de Shannon-Fano."""
+    n = len(probabilidades)
+    if n == 0:
+        return []
+    if n == 1:
+        return ["0"]
+ 
+    codigos = [""] * n
+    # Índices ordenados por probabilidad decreciente
+    orden = sorted(range(n), key=lambda i: probabilidades[i], reverse=True)
+ 
+    def dividir(indices):
+        if len(indices) <= 1:
+            return
+        total = sum(probabilidades[i] for i in indices)
+        # Punto de corte que minimiza la diferencia entre ambas mitades
+        acumulado = 0.0
+        mejor_corte, mejor_dif = 1, math.inf
+        for corte in range(1, len(indices)):
+            acumulado += probabilidades[indices[corte - 1]]
+            dif = abs(total - 2 * acumulado)
+            if dif < mejor_dif:
+                mejor_dif, mejor_corte = dif, corte
+        izq, der = indices[:mejor_corte], indices[mejor_corte:]
+        for i in izq:
+            codigos[i] += "0"
+        for i in der:
+            codigos[i] += "1"
+        dividir(izq)
+        dividir(der)
+ 
+    dividir(orden)
+    return codigos
+
+
+def codificar_a_bytearray(alfabeto: str, codigos: str, mensaje: str):
+    """Codifica `mensaje` (escrito con los símbolos de `alfabeto`).
+    Los codigos son los que devuelve la codificacion de Huffman o Shannon Fano
+    alfabeto: cadena con los símbolos fuente; alfabeto[i] se codifica
+              con codigos[i].
+    codigos:  lista de cadenas de '0' y '1'.
+    Devuelve un bytearray.
+    """
+    if len(alfabeto) != len(codigos):
+        raise ValueError("El alfabeto y la lista de códigos deben tener igual longitud")
+ 
+    tabla = dict(zip(alfabeto, codigos))
+    try:
+        bits = "".join(tabla[simbolo] for simbolo in mensaje)
+    except KeyError as e:
+        raise ValueError(f"El símbolo {e.args[0]!r} no pertenece al alfabeto") from None
+ 
+    relleno = (-len(bits)) % 8
+    bits += "0" * relleno
+ 
+    resultado = bytearray([relleno])
+    for i in range(0, len(bits), 8):
+        resultado.append(int(bits[i:i + 8], 2))
+    return resultado
+ 
+ 
+def decodificar_bytearray(alfabeto: str, codigos: str, datos: str):
+    """Decodifica una secuencia de bytes generada por `codificar`.
+    Los codigos son los que devuelve la codificacion de Huffman o Shannon Fano
+    Devuelve el mensaje original como cadena de caracteres.
+    """
+    if len(alfabeto) != len(codigos):
+        raise ValueError("El alfabeto y la lista de códigos deben tener igual longitud")
+    if len(datos) == 0:
+        raise ValueError("La secuencia de bytes está vacía")
+ 
+    relleno = datos[0]
+    bits = "".join(format(byte, "08b") for byte in datos[1:])
+    if relleno:
+        bits = bits[:-relleno]
+ 
+    tabla = dict(zip(codigos, alfabeto))
+    mensaje = []
+    actual = ""
+    for bit in bits:
+        actual += bit
+        if actual in tabla:  # al ser un código prefijo, la primera coincidencia es la correcta
+            mensaje.append(tabla[actual])
+            actual = ""
+ 
+    if actual:
+        raise ValueError("La secuencia de bits no corresponde a una codificación válida")
+    return "".join(mensaje)
+
+def imprimir_bits_bytearray(datos: bytearray):
+    """Imprime el bytearray como secuencia de bits"""
+    print("Bits:      ", "".join(format(b, "08b") for b in datos[1:]))
+
+
+def get_tasa_compresion(mensaje: str, codificado: str) -> float:
+    """Calcula la tasa de compresión: tamaño original / tamaño comprimido.
+    El codificado es por huffman o shannon fano
+    mensaje:    cadena con el mensaje original (se mide en bytes UTF-8, o sea
+                1 byte por carácter para texto ASCII).
+    codificado: bytearray generado por `codificar_a_bytearray` (incluye el byte de relleno).
+    Un valor mayor que 1 indica que hubo compresión.
+    """
+    if len(codificado) == 0:
+        raise ValueError("La secuencia de bytes está vacía")
+    return len(mensaje.encode("utf-8")) / len(codificado)
+
+
+def comprimir_rlc(mensaje: str) -> bytearray:
+    """Comprime `mensaje` con RLC y devuelve un bytearray."""
+    resultado = bytearray()
+    i = 0
+    while i < len(mensaje):
+        caracter = mensaje[i]
+        codigo = ord(caracter)
+        if codigo > 255:
+            raise ValueError(f"El carácter {caracter!r} no entra en un byte")
+ 
+        # Contar repeticiones consecutivas del mismo carácter
+        j = i
+        while j < len(mensaje) and mensaje[j] == caracter:
+            j += 1
+        repeticiones = j - i
+ 
+        # Un byte solo guarda hasta 255: se parte la racha si es más larga
+        while repeticiones > 0:
+            n = min(repeticiones, 255)
+            resultado.append(codigo)
+            resultado.append(n)
+            repeticiones -= n
+        i = j
+ 
+    return resultado
+
+
+def descomprimir_rlc(datos: bytearray) -> str:
+    """Operación inversa: recupera el mensaje a partir del bytearray RLC."""
+    if len(datos) % 2 != 0:
+        raise ValueError("La secuencia debe tener pares de bytes (carácter, cantidad)")
+    return "".join(chr(datos[i]) * datos[i + 1] for i in range(0, len(datos), 2))
+
+
+def get_texto_rlc(datos: bytearray) -> str:
+    """Devuelve el bytearray RLC en formato legible, por ejemplo U2O4A3I1E1U4."""
+    if len(datos) % 2 != 0:
+        raise ValueError("La secuencia debe tener pares de bytes (carácter, cantidad)")
+    texto = "".join(chr(datos[i]) + str(datos[i + 1]) for i in range(0, len(datos), 2))
+    return texto
+
 ####################################################### UNIDAD 6 ##################################################################
 
 def get_matriz_canal(entrada: str, salida: str):
@@ -1006,6 +1183,4 @@ def get_probabilidad_error_canal(canal: list[list[float]], prob_entrada: list[fl
 #################################################################################################################################
 #################################################################################################################################
 #################################################################################################################################
-
-
 
