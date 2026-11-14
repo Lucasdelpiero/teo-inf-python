@@ -606,5 +606,17 @@ def get_entropia_a_posteriori(prob_a_priori, matriz_transicion_canal):
  
     return entropias
 
+def get_entropia_a_priori(prob_a_priori: list[float]):
+    """Si se trata de la entrada la medida de la incertidumbre sobre el simbolo que emitira la fuente antes de recibir un simbolo de salida determinado"""
+    return get_entropia_lista_prob(prob_a_priori)
+
+print("Entropia entrada c1: ", get_entropia_a_priori([2/5, 3/5]))
+
 ent = get_entropia_a_posteriori([2/5, 3/5],[[3/5, 2/5], [1/3, 2/3]] )
+print("Entropia salida c1:")
+print(ent)
+
+print("Entropia entrada c1: ", get_entropia_a_priori([3/4, 1/4]))
+print("Entropia salida c2:")
+ent = get_entropia_a_posteriori([3/4, 1/4],[[2/3, 1/3], [1/10, 9/10]] )
 print(ent)
