@@ -1152,11 +1152,11 @@ for nombre, funcion in (("Huffman", get_codificacion_huffman), ("Shannon-Fano", 
     datos = codificar_a_bytearray(alfabeto, codigos, mensaje)
     recuperado = decodificar_bytearray(alfabeto, codigos, datos)
     print(nombre)
-    print("  códigos:   ", codigos)
+    print("  codigos:   ", codigos)
     print("  bytes:     ", list(datos))
     print("  bits:      ", "".join(format(b, "08b") for b in datos[1:]))
     print("  decodificado:", recuperado, "->", "OK" if recuperado == mensaje else "ERROR")
-    print("  tasa de compresión:", round(get_tasa_compresion(mensaje, datos), 4))
+    print("  tasa de compresion:", round(get_tasa_compresion(mensaje, datos), 4))
 
 
 

@@ -811,6 +811,10 @@ def get_texto_rlc(datos: bytearray) -> str:
     texto = "".join(chr(datos[i]) + str(datos[i + 1]) for i in range(0, len(datos), 2))
     return texto
 
+def imprimir_lista_bytearray(datos: bytearray):
+    """Imprime en numeros enteros los valores del bytearray"""
+    print(list(datos))
+
 ####################################################### UNIDAD 6 ##################################################################
 
 def get_matriz_canal(entrada: str, salida: str):
@@ -1195,6 +1199,55 @@ def get_probabilidad_error_canal(canal: list[list[float]], prob_entrada: list[fl
 
 ####################################################### FORMATEO ##################################################################
 
+# Formateo con punto flotante
+
+"""
+print("entropia: {h:.2f}".format(h = entropia))
+"""
+
+# Dar tamaño minimo 5 hacer que se centre a izquierda
+"""
+print(f"{'Entropia a priori:':<25}", [f"{entropia_a_priori:.4f}"])
+"""
+
+# Imprimir bytearray
+"""
+print("Bytearray: ", list(mi_bytearray), f"({len(mi_bytearray)} bytes)")
+"""
+
+# Loopear sobre argumentos para funcion 
+"""
+ejemplos = {
+    "1" : (prob_a_priori1, matriz1),
+    "31" : (prob_a_priori31, matriz31),
+    "32" : (prob_a_priori32, matriz32),
+    "6"  : (probabilidades_entrada6, matriz6)
+}
+
+for nombre, (prob, matriz) in ejemplos.items():
+    entropia_a_priori = get_entropia_lista_prob(prob)
+    entropia_a_posteriori = get_entropia_a_posteriori(prob, matriz)
+    print(nombre)
+    print(f"{'Entropia a priori:':<25}", [f"{entropia_a_priori:.4f}"])
+    print(f"{'Entropia a posteriori:':<25}", [f"{p:.4f}" for p in entropia_a_posteriori])"""
+
+# Se puede loopear sobre funciones para no tener que reescribir todos los print para cada funcion especifica 
+"""
+alfabeto = "abcdef"
+P = [0.4, 0.2, 0.2, 0.1, 0.05, 0.05]
+mensaje = "abacabadeffedcba"
+ 
+for nombre, funcion in (("Huffman", get_codificacion_huffman), ("Shannon-Fano", get_codificacion_shannon_fano)):
+    codigos = funcion(P)
+    datos = codificar_a_bytearray(alfabeto, codigos, mensaje)
+    recuperado = decodificar_bytearray(alfabeto, codigos, datos)
+    print(nombre)
+    print("  codigos:   ", codigos)
+    print("  bytes:     ", list(datos))
+    print("  bits:      ", "".join(format(b, "08b") for b in datos[1:]))
+    print("  decodificado:", recuperado, "->", "OK" if recuperado == mensaje else "ERROR")
+    print("  tasa de compresion:", round(get_tasa_compresion(mensaje, datos), 4))
+"""
 
 
 #################################################################################################################################
@@ -1209,4 +1262,5 @@ def get_probabilidad_error_canal(canal: list[list[float]], prob_entrada: list[fl
 #################################################################################################################################
 #################################################################################################################################
 #################################################################################################################################
+
 

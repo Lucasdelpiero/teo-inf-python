@@ -1184,7 +1184,8 @@ def get_texto_rlc(datos: bytearray) -> str:
     texto = "".join(chr(datos[i]) + str(datos[i + 1]) for i in range(0, len(datos), 2))
     return texto
 
-
+def imprimir_lista_bytearray(datos: bytearray):
+    print(list(datos))
 
 mensaje = "UUOOOOAAAIEUUUU"
 comprimido = comprimir_rlc(mensaje)
