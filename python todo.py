@@ -423,10 +423,8 @@ def primer_teorema_shanon(listaProb : list[float], listaCodOrdenN: list[str], N:
     Cuando la longitud de orden n del codigo esta entre la entropia de la fuente y la entropia de la fuente\n
     Si H <= Ln/N <= H + 1"""
     longitudMedia = get_longitud_media_codigo(listaProb, listaCodOrdenN) 
-    print("longitud: " + str(longitudMedia))
     r = get_r(listaCodOrdenN)
     entropia =  get_entropia_tamanio_r(listaProb, r) 
-    print("entropia: " + str(entropia/ N))
     valor = (entropia / N <= longitudMedia / N and longitudMedia / N < entropia / N + 1 / N)
     return valor
 
@@ -590,7 +588,7 @@ def get_string_a_bytearray(texto: str) -> bytearray:
     return matriz_a_bytes([lrc] + filas)
  
  
-def verificar(datos) -> bool:
+def verificar(datos: bytearray) -> bool:
     """True si todas las filas y todas las columnas tienen paridad par."""
     matriz = bytes_a_matriz(datos)
     return bool(matriz) and not filas_incorrectas(matriz) and not columnas_incorrectas(matriz)
@@ -616,8 +614,8 @@ def corregir_matriz_mensaje(matriz: list[list[int]]):
     return None                                         # no corregible
  
  
-def get_bytearray_a_string(datos) -> str:
-    """Devuelve el mensaje original, o "" si no se pueden corregir los errores."""
+def get_bytearray_a_string(datos: bytearray) -> str:
+    """Devuelve el mensaje original corregido, o "" si no se pueden corregir los errores."""
     matriz = bytes_a_matriz(datos)
     if not matriz:
         return ""
@@ -627,6 +625,11 @@ def get_bytearray_a_string(datos) -> str:
  
     # Se descarta la fila del LRC (fila 0) y el bit de paridad (último bit)
     return "".join(chr(int("".join(map(str, fila[:7])), 2)) for fila in matriz[1:])
+
+def corregir_bytearray_devolver_string(datos: bytearray) -> str:
+    """Corrige mensaje en bytearray y lo devuelve como string\n
+    solo llama a get_bytearray_a_string pero asi quiza es mas facil de encontrar"""
+    return get_bytearray_a_string(datos)
 
 
 def imprimir_bytearray_matriz(datos: bytearray):
@@ -698,7 +701,7 @@ def get_codificacion_shannon_fano(probabilidades: list[float]):
     return codigos
 
 
-def codificar_a_bytearray(alfabeto: str, codigos: str, mensaje: str):
+def codificar_a_bytearray(alfabeto: list[str], codigos: list[str], mensaje: str):
     """Codifica `mensaje` (escrito con los símbolos de `alfabeto`).
     Los codigos son los que devuelve la codificacion de Huffman o Shannon Fano
     alfabeto: cadena con los símbolos fuente; alfabeto[i] se codifica
@@ -757,17 +760,35 @@ def imprimir_bits_bytearray(datos: bytearray):
     print("Bits:      ", "".join(format(b, "08b") for b in datos[1:]))
 
 
-def get_tasa_compresion(mensaje: str, codificado: str) -> float:
+def get_tasa_compresion_bytearray(mensaje: str, codificado: bytearray) -> float:
     """Calcula la tasa de compresión: tamaño original / tamaño comprimido.
-    El codificado es por huffman o shannon fano
     mensaje:    cadena con el mensaje original (se mide en bytes UTF-8, o sea
                 1 byte por carácter para texto ASCII).
-    codificado: bytearray generado por `codificar_a_bytearray` (incluye el byte de relleno).
+    codificado: bytearray generado por `codificar_a_bytearray`. El primer byte
+                es el de relleno y NO se cuenta en el tamaño comprimido.
+    Un valor mayor que 1 indica que hubo compresión.
+    """
+    datos_comprimidos = len(codificado) - 1  # se descuenta el byte de relleno
+    if datos_comprimidos <= 0:
+        raise ValueError("La secuencia de bytes está vacía")
+    return len(mensaje.encode("utf-8")) / datos_comprimidos
+
+
+def get_tasa_compresion_str(mensaje: str, codificado: str, redondear_bytes: bool = False) -> float:
+    """Calcula la tasa de compresión: tamaño original / tamaño comprimido.
+    mensaje:         cadena con el mensaje original (se mide en bytes UTF-8, o sea
+                     1 byte por carácter para texto ASCII).
+    codificado:      string de bits ('0' y '1') generado por `codificar_a_string`.
+    redondear_bytes: si es True, el tamaño comprimido se redondea hacia arriba a
+                     bytes completos (como lo haría un archivo real, sin contar relleno).
     Un valor mayor que 1 indica que hubo compresión.
     """
     if len(codificado) == 0:
-        raise ValueError("La secuencia de bytes está vacía")
-    return len(mensaje.encode("utf-8")) / len(codificado)
+        raise ValueError("La secuencia codificada está vacía")
+    tam_comprimido = len(codificado) / 8
+    if redondear_bytes:
+        tam_comprimido = math.ceil(tam_comprimido)
+    return len(mensaje.encode("utf-8")) / tam_comprimido
 
 
 def comprimir_rlc(mensaje: str) -> bytearray:
@@ -1069,9 +1090,9 @@ def get_reduccion_suficiente(canal, tol=1e-9):
         if not combinado:
             return actual, det_total
 
-
+""" Funciono mal el px, por ahi sirve en otro momento
 def get_capacidad(canal: list[list[float]], tol=1e-12, max_iter=10000):
-    """Valor maximo al cual la informacion puede ser transmitida por un canal"""
+    \"\"\"Valor maximo al cual la informacion puede ser transmitida por un canal"\""
     n, m = len(canal), len(canal[0])
     prob_entrada = [1 / n] * n
 
@@ -1097,6 +1118,42 @@ def get_capacidad(canal: list[list[float]], tol=1e-12, max_iter=10000):
         prob_entrada = nuevo
 
     return get_informacion_mutua_matriz_lista(canal, prob_entrada), prob_entrada
+"""
+
+def get_capacidad(canal: list[list[float]], tol=1e-12, max_iter=10000):
+    """Valor maximo al cual la informacion puede ser transmitida por un canal y la prob de entrada"""
+    n, m = len(canal), len(canal[0])
+    px = [1 / n] * n
+
+    for _ in range(max_iter):
+        py = [sum(px[i] * canal[i][j] for i in range(n)) for j in range(m)]
+
+        # Divergencia D(P(.|x) || p(y)) en nats para cada entrada
+        d = []
+        for i in range(n):
+            s = 0.0
+            for j in range(m):
+                if canal[i][j] > 0:
+                    s += canal[i][j] * log(canal[i][j] / py[j])
+            d.append(s)
+
+        nuevo = [px[i] * exp(d[i]) for i in range(n)]
+        total = sum(nuevo)
+        nuevo = [v / total for v in nuevo]
+
+        converge = max(abs(nuevo[i] - px[i]) for i in range(n)) < tol
+        px = nuevo
+        if converge:
+            break
+
+    # Capacidad = informacion mutua con la distribucion optima
+    py = [sum(px[i] * canal[i][j] for i in range(n)) for j in range(m)]
+    info = 0.0
+    for i in range(n):
+        for j in range(m):
+            if canal[i][j] > 0:
+                info += px[i] * canal[i][j] * log2(canal[i][j] / py[j])
+    return info, px
 
 
 def get_informacion_mutua_matriz_lista(canal: list[list[float]], prob_entrada: list[float]):
@@ -1132,6 +1189,7 @@ def get_capacidad_si_det_sinruido_uni(canal: list[list[float]]):
 
 def capacidad_binaria(canal: list[list[float]], paso: int = 0.0001):
     """
+    DEVUELVE P OPTIMO\n
     Estima la capacidad de un canal binario (2 entradas) recorriendo las
     probabilidades a priori p(x0) = 0, paso, 2*paso, ..., 1 y calculando la
     informacion mutua para cada una.
@@ -1161,6 +1219,11 @@ def capacidad_binaria(canal: list[list[float]], paso: int = 0.0001):
 
     return mejor_info, mejor_p
 
+def prob_entrada_optima_binaria(canal: list[list[float]]):
+    """"Devuelve P y 1-P OPTIMO\n
+    se usa la funcion de capacidad_binaria(canal) para obtener los que den mayor informacion mutua"""
+    _ ,p = capacidad_binaria(canal)
+    return p, 1-p
 
 def get_probabilidad_error_canal(canal: list[list[float]], prob_entrada: list[float]):
     """
@@ -1195,7 +1258,65 @@ def get_probabilidad_error_canal(canal: list[list[float]], prob_entrada: list[fl
 
     return 1 - p_acierto, decision
 
+def decodificar_codigo(codigos: list[str], codigo: str, alfabeto=None):
+    """Decodifica `codigo` usando una lista de palabras código.
+ 
+    Funciona con cualquier alfabeto de código (binario, ternario, letras,
+    dígitos, etc.): cada elemento de `codigo` es un símbolo del código.
+    Las palabras código deben formar un código prefijo (ninguna es prefijo
+    de otra) para que la decodificación sea única.
+ 
+    codigos:  lista de palabras código, p. ej. ["11", "01", "00", "10"].
+    codigo:   cadena (o secuencia) a decodificar.
+    alfabeto: símbolos fuente, en el mismo orden que `codigos`. Si se omite,
+              se usan "a", "b", "c", ... en orden.
+ 
+    Ejemplos:
+        decodificar_codigo(["11", "01", "00", "10"], "1100111001111001")
+        -> "acadbadb"
+        decodificar_codigo(["0", "10", "11"], "0101100")  # también binario
+        decodificar_codigo(["0", "1", "20", "21"], "2102001")  # ternario
+    """
+    if alfabeto is None:
+        if len(codigos) > 26:
+            raise ValueError("Con más de 26 códigos hay que indicar el alfabeto")
+        alfabeto = [chr(ord("a") + i) for i in range(len(codigos))]
+    if len(alfabeto) != len(codigos):
+        raise ValueError("El alfabeto y la lista de códigos deben tener igual longitud")
+ 
+    tabla = dict(zip(codigos, alfabeto))
+    mensaje = []
+    actual = ""
+    for simbolo in codigo:
+        actual += simbolo
+        if actual in tabla:
+            mensaje.append(tabla[actual])
+            actual = ""
+ 
+    if actual:
+        raise ValueError(f"Quedaron símbolos sin decodificar: {actual!r}")
+    return "".join(mensaje)
 
+
+def codificar_a_string(alfabeto: list[str], codigos: list[str], mensaje: str) -> str:
+    """Codifica `mensaje` con la lista de códigos y devuelve el resultado como string.
+    alfabeto: símbolos fuente; alfabeto[i] se codifica con codigos[i].
+    codigos:  lista de palabras código (por ej. la que devuelve Huffman o Shannon-Fano).
+    Ej: codificar_a_string(["A","B","C"], ["0","10","11"], "ABAC") -> "010011"
+    """
+    if len(alfabeto) != len(codigos):
+        raise ValueError("El alfabeto y la lista de códigos deben tener igual longitud")
+
+    tabla = dict(zip(alfabeto, codigos))
+    try:
+        return "".join(tabla[simbolo] for simbolo in mensaje)
+    except KeyError as e:
+        raise ValueError(f"El símbolo {e.args[0]!r} no pertenece al alfabeto") from None
+
+
+def decodificar_desde_string(alfabeto: list[str], codigos: list[str], codificado: str) -> str:
+    """Operación inversa de `codificar_a_string`."""
+    return decodificar_codigo(codigos, codificado, alfabeto)
 
 ####################################################### FORMATEO ##################################################################
 
@@ -1262,5 +1383,4 @@ for nombre, funcion in (("Huffman", get_codificacion_huffman), ("Shannon-Fano", 
 #################################################################################################################################
 #################################################################################################################################
 #################################################################################################################################
-
 
