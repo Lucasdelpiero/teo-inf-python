@@ -381,40 +381,30 @@ def get_lista_extension_n(alfabeto, probabilidades, N):
         probabilidades_ext.append(nuevas_probabilidades)
     return probabilidades_ext, extensiones   # ["AB", "AC", "BC"...]   [0.333, 0.222, 0.125, ...]
 
-def imprimir_matriz(matrizProb : list[list[float]], listaPalabras : list[str] = []):
-    """Imprime matriz de prob en una cuadricula espaciada equitativamente, con lista de palabras opcionales"""
-    print("{pal:^10}".format( pal = ""), end = "")
-    n = len(matrizProb)
-    if len(listaPalabras) == n:
-        for i in range(n):
-            print("{pal:^10}".format(pal = listaPalabras[i]), end = "")
-    else:
-        print("No se imprimen palabras en cuadricula por error de tamanio")
-    
-    print("")
-    for i in range(n):
-        for j in range(n):
-            if j == 0:
-                    if len(listaPalabras) == n:
-                        print("{pal:^10}".format(pal = listaPalabras[i]), end = "")
-            print("{prob:^10.3f}".format(prob = matrizProb[i][j]), end = "")
-        print("")
+def imprimir_matriz(matriz: list[list[float]],
+                    etiquetas_filas: list[str] = None,
+                    etiquetas_cols: list[str] = None):
+    """Imprime una matriz (cuadrada o no) fila por fila, con etiquetas opcionales.
+    Si solo se pasan etiquetas_filas y la matriz es cuadrada, se usan tambien para las columnas."""
+    filas = len(matriz)
+    cols = len(matriz[0]) if filas else 0
 
-def imprimir_lista(listaProb : list[float], listaPalabras : list[str] = []):
-    """Imprime lista de prob con lista de palabras opcional"""
-    n = len(listaProb)
-    if len(listaPalabras) == n:
-        print("{pal:>10}".format(pal = "PALABRA"), end = "")
-        for i in range(n):
-            print("{pal:^10}".format(pal = listaPalabras[i]), end = "")
-        print("")
-    else:
-        print("No se imprimen palabras en cuadricula por error de tamanio")
-    
-    print("{pal:>10}".format(pal = "PROB"), end = "")
-    for i in range(n):
-        print("{prob:^10.3f}".format(prob = listaProb[i]), end = "")
-    print("")
+    if etiquetas_cols is None and etiquetas_filas is not None and filas == cols:
+        etiquetas_cols = etiquetas_filas
+
+    if etiquetas_cols is not None and len(etiquetas_cols) != cols:
+        raise ValueError(f"Hay {len(etiquetas_cols)} etiquetas de columna y la matriz tiene {cols} columnas")
+    if etiquetas_filas is not None and len(etiquetas_filas) != filas:
+        raise ValueError(f"Hay {len(etiquetas_filas)} etiquetas de fila y la matriz tiene {filas} filas")
+
+    # Encabezado de columnas
+    if etiquetas_cols is not None:
+        print(" " * 10 + "".join(f"{e:^10}" for e in etiquetas_cols))
+
+    # Una linea por fila
+    for i, fila in enumerate(matriz):
+        etiqueta = f"{etiquetas_filas[i]:^10}" if etiquetas_filas is not None else ""
+        print(etiqueta + "".join(f"{valor:^10.3f}" for valor in fila))
 
 ####################################################### UNIDAD 4 ##################################################################
 
@@ -865,7 +855,8 @@ def get_matriz_canal(entrada: str, salida: str):
 
 
 def get_lista_probabilidades_salida(prob_a_priori : list[float], matriz_transicion_canal: list[list[float]]):
-    """Usa las prob a priori y matriz transicion del canal/prob condicional y devuelve una lista con las prob de salida"""
+    """Se usa para canales en serie.\n
+    Usa las prob a priori y matriz transicion del canal/prob condicional y devuelve una lista con las prob de salida"""
     lista_salida : list[float] = []
     r = len(prob_a_priori)
     m = len(matriz_transicion_canal[0])

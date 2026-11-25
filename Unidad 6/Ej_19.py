@@ -1,5 +1,6 @@
 from math import log2
 from math import log
+from math import exp
 import math
 import random
 
@@ -9,15 +10,15 @@ TOLERANCIA = 0.001
 
 ############# Funciones para mensajes y listas de alfabeto y probabilidad, obtener entropia  ######################################
 
-#Devuelve una lista con la cantidad de bits necesarios para representar cada simbolo
 def get_lista_bits_necesarios(listaProb: list[float]):
+    """Devuelve una lista con la cantidad de bits necesarios para representar cada simbolo"""
     nuevaLista = []
     for prob in listaProb:
         nuevaLista.append(log2(1/prob )) 
     return nuevaLista
 
-# Entropia de una lista de probabilidades
 def get_entropia_lista_prob(listaProb: list[float]):
+    """Entropia de una lista de probabilidades"""
     total = 0
 
     for prob in listaProb:
@@ -30,13 +31,13 @@ def get_entropia_tamanio_r(listaProb: list[float], tamanioAlfabeto: int):
         total += prob * log(1/prob, tamanioAlfabeto)
     return total
 
-# Entropia de un numero si su prob es equiprobable
 def get_entropia_equiprob(num: int): # ej: dado de 6, es como si hubiera 6 elementos de 1/6 de prob
+    """Entropia de un numero si su prob es equiprobable"""
     return log2(num)
 
 
-# Crea listas de alfabeto y probabilidades con caracteres de mensajes
 def get_listas_alf_prob(mensaje: str):  # ej: "casa"
+    """Crea listas de alfabeto y probabilidades con caracteres de mensajes"""
     listaAlf = [] 
     listaProb = []
 
@@ -48,8 +49,9 @@ def get_listas_alf_prob(mensaje: str):  # ej: "casa"
         
     return [listaAlf, listaProb] # listas = crearListasAlfProb(mensaje)  ;  listaAlf = listas[0] ;    listaProb = listas[1]
 
-# Obtiene lista alfabeto de una LISTA
-def get_lista_alf_lista(lista: list[str]): # [ "001", "01", "012"]
+def get_lista_alf_lista(lista: list[str]): # 
+    """Obtiene lista alfabeto de una LISTA\n
+    EJ: ["001", "01", "012"]"""
     listaAlf = []
     for mensaje in lista:
         for letra in mensaje:
@@ -57,15 +59,16 @@ def get_lista_alf_lista(lista: list[str]): # [ "001", "01", "012"]
                 listaAlf.append(letra)
     return listaAlf # ["0", "1", "2"]
 
-# Funcion auxiliar de genPalabra
-# Segun el numero ingresado devuelve la pos del elemento segun su probabilidad acumulada
+
 def get_num(n: int, acum):
+    """Funcion auxiliar de genPalabra\n
+    Segun el numero ingresado devuelve la pos del elemento segun su probabilidad acumulada"""
     for i in range(len(acum)):
         if n < acum[i]:
             return i
 
-# Genera palabra ALEATORIA de largo N  
 def gen_palabra(n: int, listaAlf: list[str], listaProb: list[float]):
+    """Genera palabra ALEATORIA de largo N """
     palabra = ""
     listaAcum = []
     # Genera lista con probabilidad acumulada de alfabeto
@@ -82,9 +85,10 @@ def gen_palabra(n: int, listaAlf: list[str], listaProb: list[float]):
 
     return palabra
 
-# Si no tiene memoria, todos los valores de una fila deben ser similares (dentro de la tolerancia)
-# Si tiene memoria, 
-def tiene_memoria(matriz: list[list], tolerancia: float):
+
+def tiene_memoria(matriz: list[list], tolerancia: float = 0.0001):
+    """Si no tiene memoria, todos los valores de una fila deben ser similares (dentro de la tolerancia)\n
+    Si tiene memoria, estos estaran por fuera de la tolerancia"""
     n = len(matriz)
 
     for i in range(n):
@@ -106,8 +110,8 @@ def tiene_memoria(matriz: list[list], tolerancia: float):
 
 # Sigue unidad 2
 
-# Matriz transicion obtenida de un mensaje
 def get_alfabeto_matriz_transicion(mensaje: str):
+    """Matriz transicion obtenida de un mensaje"""
     listaMensaje = list(mensaje)
     alfabeto = list(dict.fromkeys(mensaje)) #diccionario conserva orden al desarmar mensaje
     n = len(alfabeto)
@@ -133,8 +137,8 @@ def get_alfabeto_matriz_transicion(mensaje: str):
     return alfabeto, matrizProb
 
 
-# Vector estacionario asumiendo inicialmente que son equiprobables
 def get_vector_estacionario(matriz: list[list], tolerancia: float):
+    """Vector estacionario asumiendo inicialmente que son equiprobables"""
     n = len(matriz)
     vectorEstacionario : list = [1/n] * n  # Asumo equiprobable
     nuevoVectorEstacinario : list = [0] * n
@@ -150,8 +154,8 @@ def get_vector_estacionario(matriz: list[list], tolerancia: float):
         
     return  vectorEstacionario
 
-# Auxiliar para multiplicar matrices para obtener el estacionario
 def mult_matriz_vec(matriz: list[list], vector: list[float]):
+    """Auxiliar para multiplicar matrices para obtener el estacionario"""
     n = len(matriz)
     nuevoValor : list = [0] * n
     for i in range(n):
@@ -159,8 +163,8 @@ def mult_matriz_vec(matriz: list[list], vector: list[float]):
             nuevoValor[i] += matriz[i][j] * vector[j]
     return nuevoValor
 
-# Entropia obtenida usando matriz y estacionario
 def get_entropia_matriz(matriz: list[list], estacionario: list[float]):
+    """Entropia obtenida usando matriz y estacionario"""
     n = len(estacionario)
     total = 0
     for i in range(n):
@@ -171,10 +175,10 @@ def get_entropia_matriz(matriz: list[list], estacionario: list[float]):
 
 ####################################################### UNIDAD 3 ##################################################################
 
-# Se usa para inecuacion de kraft, si:    SUMATORIA <= 1 es condificion suficiente para la existencia de 
-# AL MENOS 1 codigo INSTANTANEO de tal longitud
-# Por inecuacion MacMillan si es > 1 entonces no se puede definir un codigo UNIVOCO ni INSTANTANEO
 def get_sumatoria_kraft(listaPalabras: list[str]):
+    """Se usa para inecuacion de kraft, si:    SUMATORIA <= 1 es condificion suficiente para la existencia de \n
+    AL MENOS 1 codigo INSTANTANEO de tal longitud\n
+    Por inecuacion MacMillan si es > 1 entonces no se puede definir un codigo UNIVOCO ni INSTANTANEO"""
     alfabeto = get_lista_alf_lista(listaPalabras) 
     r = len(alfabeto) # r = cant de alfabeto codigo
     total = 0
@@ -183,14 +187,14 @@ def get_sumatoria_kraft(listaPalabras: list[str]):
         total += r **  (-li)
     return total
 
-# Funcion auxiliar para obtener el R (cant de simbolos de alfabeto codigo)
 def get_r(listaPalabras: list[str]):
+    """Funcion auxiliar para obtener el R (cant de simbolos de alfabeto codigo)"""
     alfabeto = get_lista_alf_lista(listaPalabras)
     r = len(alfabeto)
     return r
 
-# Largo PROMEDIO de codigo usando su prob y largo de palabras
 def get_longitud_media_codigo(listaProb: list[float], listaPalabras: list[str]):
+    """Largo PROMEDIO de codigo usando su prob y largo de palabras"""
     total = 0
     n = len(listaPalabras)
     for i in range(n):
@@ -199,8 +203,8 @@ def get_longitud_media_codigo(listaProb: list[float], listaPalabras: list[str]):
         total += prob * largo
     return total
 
-# Obtiene la entropia considerando PROB y LARGO de cada palabra codigo
 def get_entropia_ponderada_largo(listaProb: list[float], listaPalabras: list[str]):
+    """Obtiene la entropia considerando PROB y LARGO de cada palabra codigo"""
     total = 0
     n = len(listaPalabras)
     alfabeto = get_lista_alf_lista(listaPalabras) 
@@ -212,8 +216,8 @@ def get_entropia_ponderada_largo(listaProb: list[float], listaPalabras: list[str
     return total
 
 
-# Booleano que devuelve si un codigo es compacto usando su lista de prob y el largo de cada palabra codigo
 def es_compacto(listaProb: list[float], listaCod: list[str]):
+    """Booleano que devuelve si un codigo es compacto usando su lista de prob y el largo de cada palabra codigo"""
     compacto = True
     n = len(listaCod)
     if not es_univoco(listaCod):
@@ -234,6 +238,7 @@ def get_informacion(r: int, prob: float):
     return math.log(1/prob, r)
 
 def tiene_prefijo(listaCod: list[str]):
+    """Devuelve true si tiene algun prefijo en la lista de palabras"""
     for cod in listaCod:
         if listaCod.index(cod) != -1:
             return True
@@ -318,8 +323,8 @@ def es_instantaneo(lista):
     return val
 
 
-# Genera 2 listas de extension de orden n, una con las palabras y otra con las probabilidades
 def get_lista_extension_n(alfabeto, probabilidades, N):
+    """Genera 2 listas de extension de orden n, una con las palabras y otra con las probabilidades"""
     extensiones = []
     probabilidades_ext = []
     M = len(alfabeto)
@@ -336,8 +341,8 @@ def get_lista_extension_n(alfabeto, probabilidades, N):
         probabilidades_ext.append(nuevas_probabilidades)
     return probabilidades_ext, extensiones  # ["AB", "AC", "BC"...]   [0.333, 0.222, 0.125, ...]
 
-# Crear funcion de clasificar
 def clasificar(listaCod : list[str], listaProb: list[float]):
+    """Crear funcion de clasificar"""
     esUnivoco = es_univoco(listaCod)
     esNoSingular = es_no_singular(listaCod)
     esInstantaneo = es_instantaneo(listaCod)
@@ -358,8 +363,8 @@ def clasificar(listaCod : list[str], listaProb: list[float]):
     else:
         print("No es compacto")
 
-# Genera 2 listas de extension de orden n, una con las palabras y otra con las probabilidades
 def get_lista_extension_n(alfabeto, probabilidades, N):
+    """Genera 2 listas de extension de orden n, una con las palabras y otra con las probabilidades"""
     extensiones = []
     probabilidades_ext = []
     M = len(alfabeto)
@@ -376,51 +381,40 @@ def get_lista_extension_n(alfabeto, probabilidades, N):
         probabilidades_ext.append(nuevas_probabilidades)
     return probabilidades_ext, extensiones   # ["AB", "AC", "BC"...]   [0.333, 0.222, 0.125, ...]
 
-# Imprime matriz de prob en una cuadricula espaciada equitativamente, con lista de palabras opcionales
-def imprimir_matriz(matrizProb : list[list[float]], listaPalabras : list[str] = []):
-    print("{pal:^10}".format( pal = ""), end = "")
-    n = len(matrizProb)
-    if len(listaPalabras) == n:
-        for i in range(n):
-            print("{pal:^10}".format(pal = listaPalabras[i]), end = "")
-    else:
-        print("No se imprimen palabras en cuadricula por error de tamanio")
-    
-    print("")
-    for i in range(n):
-        for j in range(n):
-            if j == 0:
-                    if len(listaPalabras) == n:
-                        print("{pal:^10}".format(pal = listaPalabras[i]), end = "")
-            print("{prob:^10.3f}".format(prob = matrizProb[i][j]), end = "")
-        print("")
+def imprimir_matriz(matriz: list[list[float]],
+                    etiquetas_filas: list[str] = None,
+                    etiquetas_cols: list[str] = None):
+    """Imprime una matriz (cuadrada o no) fila por fila, con etiquetas opcionales.
+    Si solo se pasan etiquetas_filas y la matriz es cuadrada, se usan tambien para las columnas."""
+    filas = len(matriz)
+    cols = len(matriz[0]) if filas else 0
 
-# Imprime lista de prob con lista de palabras opcional
-def imprimir_lista(listaProb : list[float], listaPalabras : list[str] = []):
-    n = len(listaProb)
-    if len(listaPalabras) == n:
-        print("{pal:>10}".format(pal = "PALABRA"), end = "")
-        for i in range(n):
-            print("{pal:^10}".format(pal = listaPalabras[i]), end = "")
-        print("")
-    else:
-        print("No se imprimen palabras en cuadricula por error de tamanio")
-    
-    print("{pal:>10}".format(pal = "PROB"), end = "")
-    for i in range(n):
-        print("{prob:^10.3f}".format(prob = listaProb[i]), end = "")
-    print("")
+    if etiquetas_cols is None and etiquetas_filas is not None and filas == cols:
+        etiquetas_cols = etiquetas_filas
+
+    if etiquetas_cols is not None and len(etiquetas_cols) != cols:
+        raise ValueError(f"Hay {len(etiquetas_cols)} etiquetas de columna y la matriz tiene {cols} columnas")
+    if etiquetas_filas is not None and len(etiquetas_filas) != filas:
+        raise ValueError(f"Hay {len(etiquetas_filas)} etiquetas de fila y la matriz tiene {filas} filas")
+
+    # Encabezado de columnas
+    if etiquetas_cols is not None:
+        print(" " * 10 + "".join(f"{e:^10}" for e in etiquetas_cols))
+
+    # Una linea por fila
+    for i, fila in enumerate(matriz):
+        etiqueta = f"{etiquetas_filas[i]:^10}" if etiquetas_filas is not None else ""
+        print(etiqueta + "".join(f"{valor:^10.3f}" for valor in fila))
 
 ####################################################### UNIDAD 4 ##################################################################
 
-# Cuando la longitud de orden n del codigo esta entre la entropia de la fuente y la entropia de la fuente
-# Si H <= Ln/N <= H + 1
 def primer_teorema_shanon(listaProb : list[float], listaCodOrdenN: list[str], N: int):
+    """Significa que el codigo es suficientemente eficiente/compacto\n
+    Cuando la longitud de orden n del codigo esta entre la entropia de la fuente y la entropia de la fuente\n
+    Si H <= Ln/N <= H + 1"""
     longitudMedia = get_longitud_media_codigo(listaProb, listaCodOrdenN) 
-    print("longitud: " + str(longitudMedia))
     r = get_r(listaCodOrdenN)
     entropia =  get_entropia_tamanio_r(listaProb, r) 
-    print("entropia: " + str(entropia/ N))
     valor = (entropia / N <= longitudMedia / N and longitudMedia / N < entropia / N + 1 / N)
     return valor
 
@@ -434,8 +428,9 @@ def ordenar_por_probabilidad(listaProb: list[float],
 
     return listaProbOrdenada, listaCodOrdenada
 
-# Dada una funcion de base r se calcula su rendimiento y redundancia, devolviendo ambas
 def calcula_rendimiento_redundancia(listaProb: list[float], listaCod: list[str]):
+    """Dada una funcion de base r se calcula su rendimiento y redundancia, devolviendo ambas\n
+    return rendimiento, redundancia"""
     r = get_r(listaCod)
     entropia = get_entropia_tamanio_r(listaProb, r)
     longitud = get_longitud_media_codigo(listaProb, listaCod)
@@ -446,6 +441,7 @@ def calcula_rendimiento_redundancia(listaProb: list[float], listaCod: list[str])
     return rendimiento, redundancia
 
 def distancia_palabras_hamming(cod1: str, cod2: str) -> int:
+    """Es la cantidad de bits de diferencia entre los codigos para que uno se convierta en el otro"""
     distancia = 0
     for i in range(len(cod1)):
         if cod1[i] != cod2[i]:
@@ -454,6 +450,10 @@ def distancia_palabras_hamming(cod1: str, cod2: str) -> int:
     return distancia
 
 def get_min_distancia_deteccion_correccion_hamming(listaCod: list[str]) -> tuple[int, int, int]:
+    """Indica cual es la distancia minima para que haya un error
+       la cant de errores que puede detectar  
+       y la cantidad de correcciones que puede hacer
+    """
     distanciaMin : int = 99999
     n = len(listaCod)
     for i in range(n):
@@ -467,12 +467,14 @@ def get_min_distancia_deteccion_correccion_hamming(listaCod: list[str]) -> tuple
     return distanciaMin, deteccion, correccion
 
 def imprimir_hamming(listas: tuple[int, int, int]):
+    """Se usa para imprimir el resultado de get_min_distancia_deteccion_correccion_hamming"""
     print("Distancia: " + str(listas[0]))
     print("Detecta: " + str(listas[1]))
     print("Corrige: " + str(listas[2]))
 
-# Cuenta la cantidad de "1" en un string de binarios y devuelve si tiene cantidad par o no
+
 def tiene_paridad_par(bin: str):
+    """ Cuenta la cantidad de "1" en un string de binarios y devuelve si tiene cantidad par o no """
     cantUnos = 0
     for bit in bin:
         if bit == "1":
@@ -489,9 +491,345 @@ def get_caracter_a_binario(car: str):
     return binario
 
 
+# Ejemplo de uso abajo
+def a_bytearray(*bytes_bin: str) -> bytearray:
+    """Convierte cadenas de bits ('00100001', ...) a bytearray."""
+    return bytearray(int(b, 2) for b in bytes_bin)
+ 
+ # Cada string es una fila de la matriz 
+EJEMPLOS = {
+    "a": a_bytearray("00100001", "10000111", "10000010", "10100110", "10000010"),
+    "b": a_bytearray("00101101", "10011001", "10001010", "10011100", "10000010"),
+    "c": a_bytearray("00101010", "10000010", "10011010", "10011111", "10100101"),
+    "d": a_bytearray("00010100", "10010000", "10011110", "10011001", "10000010"),
+    "e": a_bytearray("00110101", "10011010", "10101011", "10100100", "10000010"),
+    "f": a_bytearray("00001001", "10101001", "10100101", "10001011", "10100110"),
+    "g": a_bytearray("00011101", "10010011", "10011101", "10001100", "10011111"),
+    "h": a_bytearray("00111110", "10000111", "10010000", "10000010", "10101010"),
+}
+
+def bits_a_bytearray(bits: str) -> bytearray:
+    """Convierte una cadena de unos y ceros en un bytearray (8 bits por byte).
+    Ignora espacios y saltos de línea."""
+    bits = "".join(bits.split())
+    if set(bits) - {"0", "1"}:
+        raise ValueError("La cadena solo puede tener 0 y 1 (y espacios)")
+    if len(bits) % 8:
+        raise ValueError(f"La cantidad de bits ({len(bits)}) no es múltiplo de 8")
+    return bytearray(int(bits[i:i + 8], 2) for i in range(0, len(bits), 8))
+ 
+
+def bits_a_bytearray(bits: str) -> bytearray:
+    """Convierte una cadena de unos y ceros en un bytearray (8 bits por byte).
+    Ignora espacios y saltos de línea."""
+    bits = "".join(bits.split())
+    if set(bits) - {"0", "1"}:
+        raise ValueError("La cadena solo puede tener 0 y 1 (y espacios)")
+    if len(bits) % 8:
+        raise ValueError(f"La cantidad de bits ({len(bits)}) no es múltiplo de 8")
+    return bytearray(int(bits[i:i + 8], 2) for i in range(0, len(bits), 8))
+ 
+ 
+def bytes_a_matriz(datos) -> list[list[int]]:
+    """bytes -> lista de cadenas binarias -> matriz de enteros (0/1)."""
+    cadenas = [format(b, "08b") for b in datos]
+    return [[int(c) for c in cadena] for cadena in cadenas]
+ 
+ 
+def matriz_a_bytes(matriz: list[list[int]]) -> bytearray:
+    """Matriz de bits -> lista de cadenas binarias -> bytearray."""
+    cadenas = ["".join(str(bit) for bit in fila) for fila in matriz]
+    return bytearray(int(cadena, 2) for cadena in cadenas)
+ 
+ 
+# --------------------------------------------------------------------- paridad
+ 
+def paridad(bits) -> int:
+    """Bit que completa paridad par: 1 si hay cantidad impar de unos."""
+    return sum(bits) % 2
+ 
+ 
+def filas_incorrectas(matriz) -> list[int]:
+    """Índices de las filas con paridad impar (error de VRC)."""
+    return [i for i, fila in enumerate(matriz) if paridad(fila)]
+ 
+ 
+def columnas_incorrectas(matriz) -> list[int]:
+    """Índices de las columnas con paridad impar (error de LRC / cruzada)."""
+    return [j for j, columna in enumerate(zip(*matriz)) if paridad(columna)]
+ 
+ 
+# ---------------------------------------------------------------- codificación
+ 
+def get_string_a_bytearray(texto: str) -> bytearray:
+    """Genera el bytearray con el LRC al inicio y cada carácter con su VRC."""
+    filas = []
+    for c in texto:
+        codigo = ord(c)
+        if codigo > 127:
+            raise ValueError(f"El carácter {c!r} no es ASCII (7 bits)")
+        bits = [int(b) for b in format(codigo, "07b")]
+        bits.append(paridad(bits))                      # VRC en el bit 0
+        filas.append(bits)
+ 
+    # LRC: paridad de cada columna (la última columna, la de los VRC,
+    # da la paridad cruzada)
+    lrc = [paridad(columna) for columna in zip(*filas)] if filas else [0] * 8
+    return matriz_a_bytes([lrc] + filas)
+ 
+ 
+def verificar(datos: bytearray) -> bool:
+    """True si todas las filas y todas las columnas tienen paridad par."""
+    matriz = bytes_a_matriz(datos)
+    return bool(matriz) and not filas_incorrectas(matriz) and not columnas_incorrectas(matriz)
+ 
+ 
+# ---------------------------------------------------------------- decodificación
+ 
+def corregir_matriz_mensaje(matriz: list[list[int]]):
+    """
+    Devuelve la matriz corregida, o None si no se puede corregir.
+    Solo se corrige un error de un único bit: la fila con VRC incorrecto y la
+    columna con LRC incorrecto se cruzan en el bit erróneo.
+    """
+    matriz = [fila[:] for fila in matriz]               # copia
+    filas_mal = filas_incorrectas(matriz)
+    columnas_mal = columnas_incorrectas(matriz)
+ 
+    if not filas_mal and not columnas_mal:
+        return matriz                                   # sin errores
+    if len(filas_mal) == 1 and len(columnas_mal) == 1:
+        matriz[filas_mal[0]][columnas_mal[0]] ^= 1      # invierte el bit erróneo
+        return matriz
+    return None                                         # no corregible
+ 
+ 
+def get_bytearray_a_string(datos: bytearray) -> str:
+    """Devuelve el mensaje original corregido, o "" si no se pueden corregir los errores."""
+    matriz = bytes_a_matriz(datos)
+    if not matriz:
+        return ""
+    matriz = corregir_matriz_mensaje(matriz)
+    if matriz is None:
+        return ""
+ 
+    # Se descarta la fila del LRC (fila 0) y el bit de paridad (último bit)
+    return "".join(chr(int("".join(map(str, fila[:7])), 2)) for fila in matriz[1:])
+
+def corregir_bytearray_devolver_string(datos: bytearray) -> str:
+    """Corrige mensaje en bytearray y lo devuelve como string\n
+    solo llama a get_bytearray_a_string pero asi quiza es mas facil de encontrar"""
+    return get_bytearray_a_string(datos)
+
+
+def imprimir_bytearray_matriz(datos: bytearray):
+    """ Imprime bytearray en forma de matriz """
+    for fila in bytes_a_matriz(datos):
+        print("  ", "".join(map(str, fila)))
+
+####################################################### UNIDAD 5 ##################################################################
+
+def get_codificacion_huffman(probabilidades: list[float]):
+    """Devuelve la lista de códigos binarios de Huffman."""
+    n = len(probabilidades)
+    if n == 0:
+        return []
+    if n == 1:
+        return ["0"]
+ 
+    codigos = [""] * n
+    # Cada nodo es (probabilidad, [índices de símbolos del grupo])
+    nodos = [(p, [i]) for i, p in enumerate(probabilidades)]
+ 
+    while len(nodos) > 1:
+        # Ordenar por probabilidad creciente: los dos menores quedan al principio
+        nodos.sort(key=lambda nodo: nodo[0])
+        p1, grupo1 = nodos.pop(0)  # menor probabilidad
+        p2, grupo2 = nodos.pop(0)  # siguiente menor
+        for i in grupo1:
+            codigos[i] = "0" + codigos[i]
+        for i in grupo2:
+            codigos[i] = "1" + codigos[i]
+        nodos.append((p1 + p2, grupo1 + grupo2))
+ 
+    return codigos
+ 
+ 
+def get_codificacion_shannon_fano(probabilidades: list[float]):
+    """Devuelve la lista de códigos binarios de Shannon-Fano."""
+    n = len(probabilidades)
+    if n == 0:
+        return []
+    if n == 1:
+        return ["0"]
+ 
+    codigos = [""] * n
+    # Índices ordenados por probabilidad decreciente
+    orden = sorted(range(n), key=lambda i: probabilidades[i], reverse=True)
+ 
+    def dividir(indices):
+        if len(indices) <= 1:
+            return
+        total = sum(probabilidades[i] for i in indices)
+        # Punto de corte que minimiza la diferencia entre ambas mitades
+        acumulado = 0.0
+        mejor_corte, mejor_dif = 1, math.inf
+        for corte in range(1, len(indices)):
+            acumulado += probabilidades[indices[corte - 1]]
+            dif = abs(total - 2 * acumulado)
+            if dif < mejor_dif:
+                mejor_dif, mejor_corte = dif, corte
+        izq, der = indices[:mejor_corte], indices[mejor_corte:]
+        for i in izq:
+            codigos[i] += "0"
+        for i in der:
+            codigos[i] += "1"
+        dividir(izq)
+        dividir(der)
+ 
+    dividir(orden)
+    return codigos
+
+
+def codificar_a_bytearray(alfabeto: list[str], codigos: list[str], mensaje: str):
+    """Codifica `mensaje` (escrito con los símbolos de `alfabeto`).
+    Los codigos son los que devuelve la codificacion de Huffman o Shannon Fano
+    alfabeto: cadena con los símbolos fuente; alfabeto[i] se codifica
+              con codigos[i].
+    codigos:  lista de cadenas de '0' y '1'.
+    Devuelve un bytearray.
+    """
+    if len(alfabeto) != len(codigos):
+        raise ValueError("El alfabeto y la lista de códigos deben tener igual longitud")
+ 
+    tabla = dict(zip(alfabeto, codigos))
+    try:
+        bits = "".join(tabla[simbolo] for simbolo in mensaje)
+    except KeyError as e:
+        raise ValueError(f"El símbolo {e.args[0]!r} no pertenece al alfabeto") from None
+ 
+    relleno = (-len(bits)) % 8
+    bits += "0" * relleno
+ 
+    resultado = bytearray([relleno])
+    for i in range(0, len(bits), 8):
+        resultado.append(int(bits[i:i + 8], 2))
+    return resultado
+ 
+ 
+def decodificar_bytearray(alfabeto: str, codigos: str, datos: str):
+    """Decodifica una secuencia de bytes generada por `codificar`.
+    Los codigos son los que devuelve la codificacion de Huffman o Shannon Fano
+    Devuelve el mensaje original como cadena de caracteres.
+    """
+    if len(alfabeto) != len(codigos):
+        raise ValueError("El alfabeto y la lista de códigos deben tener igual longitud")
+    if len(datos) == 0:
+        raise ValueError("La secuencia de bytes está vacía")
+ 
+    relleno = datos[0]
+    bits = "".join(format(byte, "08b") for byte in datos[1:])
+    if relleno:
+        bits = bits[:-relleno]
+ 
+    tabla = dict(zip(codigos, alfabeto))
+    mensaje = []
+    actual = ""
+    for bit in bits:
+        actual += bit
+        if actual in tabla:  # al ser un código prefijo, la primera coincidencia es la correcta
+            mensaje.append(tabla[actual])
+            actual = ""
+ 
+    if actual:
+        raise ValueError("La secuencia de bits no corresponde a una codificación válida")
+    return "".join(mensaje)
+
+def imprimir_bits_bytearray(datos: bytearray):
+    """Imprime el bytearray como secuencia de bits"""
+    print("Bits:      ", "".join(format(b, "08b") for b in datos[1:]))
+
+
+def get_tasa_compresion_bytearray(mensaje: str, codificado: bytearray) -> float:
+    """Calcula la tasa de compresión: tamaño original / tamaño comprimido.
+    mensaje:    cadena con el mensaje original (se mide en bytes UTF-8, o sea
+                1 byte por carácter para texto ASCII).
+    codificado: bytearray generado por `codificar_a_bytearray`. El primer byte
+                es el de relleno y NO se cuenta en el tamaño comprimido.
+    Un valor mayor que 1 indica que hubo compresión.
+    """
+    datos_comprimidos = len(codificado) - 1  # se descuenta el byte de relleno
+    if datos_comprimidos <= 0:
+        raise ValueError("La secuencia de bytes está vacía")
+    return len(mensaje.encode("utf-8")) / datos_comprimidos
+
+
+def get_tasa_compresion_str(mensaje: str, codificado: str, redondear_bytes: bool = False) -> float:
+    """Calcula la tasa de compresión: tamaño original / tamaño comprimido.
+    mensaje:         cadena con el mensaje original (se mide en bytes UTF-8, o sea
+                     1 byte por carácter para texto ASCII).
+    codificado:      string de bits ('0' y '1') generado por `codificar_a_string`.
+    redondear_bytes: si es True, el tamaño comprimido se redondea hacia arriba a
+                     bytes completos (como lo haría un archivo real, sin contar relleno).
+    Un valor mayor que 1 indica que hubo compresión.
+    """
+    if len(codificado) == 0:
+        raise ValueError("La secuencia codificada está vacía")
+    tam_comprimido = len(codificado) / 8
+    if redondear_bytes:
+        tam_comprimido = math.ceil(tam_comprimido)
+    return len(mensaje.encode("utf-8")) / tam_comprimido
+
+
+def comprimir_rlc(mensaje: str) -> bytearray:
+    """Comprime `mensaje` con RLC y devuelve un bytearray."""
+    resultado = bytearray()
+    i = 0
+    while i < len(mensaje):
+        caracter = mensaje[i]
+        codigo = ord(caracter)
+        if codigo > 255:
+            raise ValueError(f"El carácter {caracter!r} no entra en un byte")
+ 
+        # Contar repeticiones consecutivas del mismo carácter
+        j = i
+        while j < len(mensaje) and mensaje[j] == caracter:
+            j += 1
+        repeticiones = j - i
+ 
+        # Un byte solo guarda hasta 255: se parte la racha si es más larga
+        while repeticiones > 0:
+            n = min(repeticiones, 255)
+            resultado.append(codigo)
+            resultado.append(n)
+            repeticiones -= n
+        i = j
+ 
+    return resultado
+
+
+def descomprimir_rlc(datos: bytearray) -> str:
+    """Operación inversa: recupera el mensaje a partir del bytearray RLC."""
+    if len(datos) % 2 != 0:
+        raise ValueError("La secuencia debe tener pares de bytes (carácter, cantidad)")
+    return "".join(chr(datos[i]) * datos[i + 1] for i in range(0, len(datos), 2))
+
+
+def get_texto_rlc(datos: bytearray) -> str:
+    """Devuelve el bytearray RLC en formato legible, por ejemplo U2O4A3I1E1U4."""
+    if len(datos) % 2 != 0:
+        raise ValueError("La secuencia debe tener pares de bytes (carácter, cantidad)")
+    texto = "".join(chr(datos[i]) + str(datos[i + 1]) for i in range(0, len(datos), 2))
+    return texto
+
+def imprimir_lista_bytearray(datos: bytearray):
+    """Imprime en numeros enteros los valores del bytearray"""
+    print(list(datos))
+
 ####################################################### UNIDAD 6 ##################################################################
 
 def get_matriz_canal(entrada: str, salida: str):
+    """Devuelve la matriz de transicion de un canal dada tal entrada y salida en palabras"""
     alfabeto_entrada = sorted(set(entrada))
     alfabeto_salida = sorted(set(salida))
 
@@ -516,8 +854,9 @@ def get_matriz_canal(entrada: str, salida: str):
     return matriz
 
 
-# Usa las prob a priori y matriz transicion del canal/prob condicional y devuelve una lista con las prob de salida
 def get_lista_probabilidades_salida(prob_a_priori : list[float], matriz_transicion_canal: list[list[float]]):
+    """Se usa para canales en serie.\n
+    Usa las prob a priori y matriz transicion del canal/prob condicional y devuelve una lista con las prob de salida"""
     lista_salida : list[float] = []
     r = len(prob_a_priori)
     m = len(matriz_transicion_canal[0])
@@ -528,8 +867,8 @@ def get_lista_probabilidades_salida(prob_a_priori : list[float], matriz_transici
     return lista_salida
 
 
-# Usa las prob a priori y matriz transicion canal para obtener la matriz prob a priori
 def get_matriz_probabilidades_a_posteriori(prob_a_priori : list[float], matriz_transicion_canal: list[list[float]]):
+    """Usa las prob a priori y matriz transicion canal para obtener la matriz prob a posteriori"""
     r = len(prob_a_priori)
     m = len(matriz_transicion_canal[0])
 
@@ -551,10 +890,11 @@ def get_matriz_probabilidades_a_posteriori(prob_a_priori : list[float], matriz_t
 
     return matriz_prob_posteriori
 
-# Prob simultaneo
-# Prob conjunta: P(a,b) = P(ai/bj).P(bj) = P(bj/ai).P(ai)
+
 def get_matriz_prob_conjunta(prob_a_priori : list[float], matriz_transicion_canal: list[list[float]]):
     """
+    Prob simultaneo\n
+    Prob conjunta: P(a,b) = P(ai/bj).P(bj) = P(bj/ai).P(ai)\n
     prob_a_priori:   lista de largo r, p_a[i] = P(a_i)
     matriz_transicion_canal: matriz (r x m), canal[i][j] = P(b_j | a_i)
     Devuelve: matriz (r x m), resultado[i][j] = P(a_i, b_j)
@@ -571,9 +911,14 @@ def get_matriz_prob_conjunta(prob_a_priori : list[float], matriz_transicion_cana
 
     return matriz_prob_conjunta
 
-# Representa el numero medio de bits necesarios para definir la entrada tras la recepcion y lectura del simbolo bj
+def get_entropia_a_priori(prob_a_priori: list[float]):
+    """Si se trata de la entrada la medida de la incertidumbre sobre el simbolo que emitira la fuente antes de recibir un simbolo de salida determinado"""
+    return get_entropia_lista_prob(prob_a_priori)
+
+
 def get_entropia_a_posteriori(prob_a_priori: list[float], matriz_transicion_canal: list[list[float]]):
     """
+    Representa el numero medio de bits necesarios para definir la entrada tras la recepcion y lectura del simbolo bj
     Devuelve la lista [H(A|b_1), H(A|b_2), ...] en bits.
  
     prob_a_priori: lista con P(a_i).
@@ -594,49 +939,429 @@ def get_entropia_a_posteriori(prob_a_priori: list[float], matriz_transicion_cana
  
     return entropias
 
-# Entropia de salida H(B): entropia de la distribucion de probabilidades de salida
 def get_entropia_salida(prob_a_priori: list[float], matriz_transicion_canal: list[list[float]]):
+    """Entropia de salida H(B): entropia de la distribucion de probabilidades de salida"""
     prob_b = get_lista_probabilidades_salida(prob_a_priori, matriz_transicion_canal)
     return get_entropia_lista_prob(prob_b)
 
-# Mide la informacion que queda en A despues de observar B, repesenta la perdida de informacion sobre A causada por el canal
-# H(A/B)
 def get_ruido(prob_a_priori: list[float], matriz_transicion_canal: list[list[float]]):
+    """H(A/B): Mide la informacion que queda en A despues de observar B, repesenta la perdida de informacion sobre A causada por el canal """
     prob_b = get_lista_probabilidades_salida(prob_a_priori, matriz_transicion_canal)
     h_posteriori = get_entropia_a_posteriori(prob_a_priori, matriz_transicion_canal)
     return sum(pb * h for pb, h in zip(prob_b, h_posteriori))
 
-# Incertidumbre de la salida conociendo la entrada
-# H(B/A)
 def get_perdida(prob_a_priori: list[float], matriz_transicion_canal: list[list[float]]):
+    """H(B/A): Incertidumbre de la salida conociendo la entrada"""
     total = 0
     for i, fila in enumerate(matriz_transicion_canal):
         h_fila = sum(p * log2(1 / p) for p in fila if p > 0)
         total += prob_a_priori[i] * h_fila
     return total
 
-# Es la suma H(A,B) = de H(A) + H(B/A) = H(B) + H(B/A) = H(B,A)
 def get_entropia_afin(prob_a_priori, matriz_transicion_canal):
+    """Incertidumbre total del par entrada / salida\n
+        Es la suma H(A,B) = de H(A) + H(B/A) = H(B) + H(A/B) = H(B,A)"""
     conjunta = get_matriz_prob_conjunta(prob_a_priori, matriz_transicion_canal)
     return sum(p * log2(1 / p) for fila in conjunta for p in fila if p > 0)
 
 
-# Informacion mutua: I(A;B) = H(A) - H(A|B)
 def get_informacion_mutua(prob_a_priori: list[float], matriz_transicion_canal: list[list[float]]):
+    """Informacion mutua: I(A;B) = H(A) - H(A|B)"""
     return get_entropia_lista_prob(prob_a_priori) - get_ruido(prob_a_priori, matriz_transicion_canal)
 
-# Canal sin ruido: un solo elemento distinto de cero en cada columna
-# Si H(A/B) = 0 luego se cumple que I(A,B) = H(A)
+
 def es_canal_sin_ruido(prob: list[float], matriz: list[list[float]]):
+    """Canal sin ruido: un solo elemento distinto de cero en cada columna\n
+    Si H(A/B) = 0 luego se cumple que I(A,B) = H(A)"""
     ruido = get_ruido(prob, matriz)
     return ruido == 0
 
-# Canal determinante: un solo elemento distinto de cero en cada fila
-# Si H(B/A) = 0 luego se cumple que I(A,B) = H(B)
+
 def es_canal_determinante(prob: list[float], matriz: list[list[float]]):
+    """Canal determinante: un solo elemento distinto de cero en cada fila\n
+    Si H(B/A) = 0 luego se cumple que I(A,B) = H(B)"""
     perdida = get_perdida(prob, matriz)
     return perdida == 0
 
+def get_canal_compuesto(canal1: list[list[float]], canal2: list[list[float]]):
+    """De un canal P y un canal determinante se devuelve un canal reducido"""
+    n = len(canal1)
+    m = len(canal1[0])
+    k = len(canal2[0])
+
+    if len(canal2) != m:
+        print("Error no se puede devolver canal reducido")
+        return []
+
+    resultado = [[0.0] * k for _ in range(n)]
+    for i in range(n):
+        for j in range(k):
+            for y in range(m):
+                resultado[i][j] += canal1[i][y] * canal2[y][j]
+
+    return resultado
+
+def validar_columnas(canal, j1, j2):
+    m = len(canal[0])
+    if j1 == j2:
+        raise ValueError("Los índices de las columnas deben ser distintos.")
+    if not (0 <= j1 < m and 0 <= j2 < m):
+        raise ValueError(f"Los índices deben estar entre 0 y {m - 1}.")
+
+
+def es_reduccion_suficiente(canal, j1, j2, tol=1e-9):
+    """
+    Verifica si las columnas j1 y j2 se pueden combinar (sumar) en una
+    reducción suficiente, es decir, sin perder información sobre la entrada.
+
+    Condición: las columnas son proporcionales, o sea que para todo par de
+    filas i, l se cumple canal[i][j1] * canal[l][j2] == canal[l][j1] * canal[i][j2].
+    Equivale a que P(x|y1) = P(x|y2) para todo x.
+    """
+    validar_columnas(canal, j1, j2)
+    n = len(canal)
+
+    for i in range(n):
+        for l in range(i + 1, n):
+            if abs(canal[i][j1] * canal[l][j2] - canal[l][j1] * canal[i][j2]) > tol:
+                return False
+    return True
+
+
+def canal_determinante(canal, j1, j2):
+    """
+    Genera la matriz del canal determinante que combina las columnas j1 y j2.
+
+    Es una matriz de m filas (salidas originales) x (m-1) columnas (salidas
+    reducidas). La columna combinada queda en la posición min(j1, j2) y la
+    otra columna se elimina; el resto conserva su orden.
+    Cada fila tiene un único 1 (canal determinístico).
+    """
+    validar_columnas(canal, j1, j2)
+    m = len(canal[0])
+    menor, mayor = min(j1, j2), max(j1, j2)
+
+    det = [[0.0] * (m - 1) for _ in range(m)]
+    for c in range(m):
+        if c == mayor:
+            destino = menor
+        elif c > mayor:
+            destino = c - 1
+        else:
+            destino = c
+        det[c][destino] = 1.0
+    return det
+
+
+def get_reduccion_suficiente(canal, tol=1e-9):
+    """
+    Reduce el canal lo más posible combinando columnas mientras exista
+    algún par que sea una reducción suficiente.
+
+    Devuelve (canal_reducido, determinante_total), donde
+    canal_reducido = canal en serie con determinante_total.
+    """
+    actual = [fila[:] for fila in canal]
+    m = len(actual[0])
+    det_total = [[1.0 if i == j else 0.0 for j in range(m)] for i in range(m)]
+
+    while True:
+        m = len(actual[0])
+        combinado = False
+        for j1 in range(m):
+            for j2 in range(j1 + 1, m):
+                if es_reduccion_suficiente(actual, j1, j2, tol):
+                    det = canal_determinante(actual, j1, j2)
+                    actual = get_canal_compuesto(actual, det)
+                    det_total = get_canal_compuesto(det_total, det)
+                    combinado = True
+                    break
+            if combinado:
+                break
+        if not combinado:
+            return actual, det_total
+
+""" Funciono mal el px, por ahi sirve en otro momento
+def get_capacidad(canal: list[list[float]], tol=1e-12, max_iter=10000):
+    \"\"\"Valor maximo al cual la informacion puede ser transmitida por un canal"\""
+    n, m = len(canal), len(canal[0])
+    prob_entrada = [1 / n] * n
+
+    for _ in range(max_iter):
+        py = [sum(prob_entrada[i] * canal[i][j] for i in range(n)) for j in range(m)]
+
+        # Divergencia D(P(.|x) || p(y)) en nats para cada entrada
+        d = []
+        for i in range(n):
+            s = 0.0
+            for j in range(m):
+                if canal[i][j] > 0:
+                    s += canal[i][j] * log(canal[i][j] / py[j])
+            d.append(s)
+
+        nuevo = [prob_entrada[i] * exp(d[i]) for i in range(n)]
+        total = sum(nuevo)
+        nuevo = [v / total for v in nuevo]
+
+        if max(abs(nuevo[i] - px[i]) for i in range(n)) < tol:
+            px = nuevo
+            break
+        prob_entrada = nuevo
+
+    return get_informacion_mutua_matriz_lista(canal, prob_entrada), prob_entrada
+"""
+
+def get_capacidad(canal: list[list[float]], tol=1e-12, max_iter=10000):
+    """Valor maximo al cual la informacion puede ser transmitida por un canal y la prob de entrada"""
+    n, m = len(canal), len(canal[0])
+    px = [1 / n] * n
+
+    for _ in range(max_iter):
+        py = [sum(px[i] * canal[i][j] for i in range(n)) for j in range(m)]
+
+        # Divergencia D(P(.|x) || p(y)) en nats para cada entrada
+        d = []
+        for i in range(n):
+            s = 0.0
+            for j in range(m):
+                if canal[i][j] > 0:
+                    s += canal[i][j] * log(canal[i][j] / py[j])
+            d.append(s)
+
+        nuevo = [px[i] * exp(d[i]) for i in range(n)]
+        total = sum(nuevo)
+        nuevo = [v / total for v in nuevo]
+
+        converge = max(abs(nuevo[i] - px[i]) for i in range(n)) < tol
+        px = nuevo
+        if converge:
+            break
+
+    # Capacidad = informacion mutua con la distribucion optima
+    py = [sum(px[i] * canal[i][j] for i in range(n)) for j in range(m)]
+    info = 0.0
+    for i in range(n):
+        for j in range(m):
+            if canal[i][j] > 0:
+                info += px[i] * canal[i][j] * log2(canal[i][j] / py[j])
+    return info, px
+
+
+def get_informacion_mutua_matriz_lista(canal: list[list[float]], prob_entrada: list[float]):
+    """Variante auxiliar para informacion mutua entre matriz y lista"""
+    n, m = len(canal), len(canal[0])
+    py = [sum(prob_entrada[i] * canal[i][j] for i in range(n)) for j in range(m)]
+    info = 0.0
+    for i in range(n):
+        for j in range(m):
+            if prob_entrada[i] > 0 and canal[i][j] > 0:
+                info += prob_entrada[i] * canal[i][j] * log2(canal[i][j] / py[j])
+    return info
+
+def es_canal_uniforme(canal: list[list[float]], tol=1e-9):
+    """
+    Devuelve True si todas las filas del canal son permutaciones entre sí,
+    es decir, si todas contienen los mismos valores en distinto orden.
+    """
+    base = sorted(canal[0])
+    for fila in canal[1:]:
+        otra = sorted(fila)
+        for a, b in zip(base, otra):
+            if abs(a - b) > tol:
+                return False
+    return True
+
+
+def get_capacidad_si_det_sinruido_uni(canal: list[list[float]]):
+    """Calcula capacidad solo si es un canal: determinanto / sin ruido / uniforme"""
+    if ( es_canal_determinante(canal) or es_canal_sin_ruido(canal) or es_canal_uniforme):
+        return get_capacidad(canal)
+    return 0
+
+def capacidad_binaria(canal: list[list[float]], paso: int = 0.0001):
+    """
+    DEVUELVE P OPTIMO\n
+    Estima la capacidad de un canal binario (2 entradas) recorriendo las
+    probabilidades a priori p(x0) = 0, paso, 2*paso, ..., 1 y calculando la
+    informacion mutua para cada una.
+
+    canal: matriz de 2 filas (entradas 0 y 1) x m columnas (salidas)
+    paso: separacion entre valores consecutivos de p(x0), entre 0 y 1
+
+    Devuelve (capacidad_estimada, p), donde p es la probabilidad a priori
+    p(x0) para la cual la informacion mutua es maxima. La distribucion de
+    entrada completa es [p, 1 - p].
+    """
+    if len(canal) != 2:
+        raise ValueError("El canal debe ser binario: 2 filas (2 entradas).")
+    if not (0 < paso <= 1):
+        raise ValueError("El paso debe estar en el intervalo (0, 1].")
+
+    cantidad = int(round(1 / paso))
+    mejor_info = -1.0
+    mejor_p = 0.0
+
+    for k in range(cantidad + 1):
+        p = min(k * paso, 1.0)
+        info = get_informacion_mutua_matriz_lista(canal, [p, 1 - p])
+        if info > mejor_info:
+            mejor_info = info
+            mejor_p = p
+
+    return mejor_info, mejor_p
+
+def prob_entrada_optima_binaria(canal: list[list[float]]):
+    """"Devuelve P y 1-P OPTIMO\n
+    se usa la funcion de capacidad_binaria(canal) para obtener los que den mayor informacion mutua"""
+    _ ,p = capacidad_binaria(canal)
+    return p, 1-p
+
+def get_probabilidad_error_canal(canal: list[list[float]], prob_entrada: list[float]):
+    """
+    Calcula la probabilidad de error del canal usando la regla de decision
+    de maxima verosimilitud (ML).
+
+    prob_entrada: lista con las probabilidades a priori p(x_i)
+    canal: matriz de n filas (entradas) x m columnas (salidas), canal[i][j] = P(y_j | x_i)
+
+    Regla ML: para cada salida y_j se decide la entrada x_i que maximiza
+    P(y_j | x_i), sin usar las probabilidades a priori.
+
+    Devuelve (probabilidad_de_error, decision), donde decision[j] es la
+    entrada elegida cuando se recibe la salida y_j.
+    """
+    n, m = len(canal), len(canal[0])
+
+    if len(prob_entrada) != n:
+        raise ValueError(
+            f"La lista de probabilidades a priori tiene {len(prob_entrada)} valores "
+            f"y el canal tiene {n} entradas."
+        )
+    if abs(sum(prob_entrada) - 1.0) > 1e-9:
+        raise ValueError("Las probabilidades a priori deben sumar 1.")
+
+    p_acierto = 0.0
+    decision = []
+    for j in range(m):
+        i_ml = max(range(n), key=lambda i: canal[i][j])
+        decision.append(i_ml)
+        p_acierto += prob_entrada[i_ml] * canal[i_ml][j]
+
+    return 1 - p_acierto, decision
+
+def decodificar_codigo(codigos: list[str], codigo: str, alfabeto=None):
+    """Decodifica `codigo` usando una lista de palabras código.
+ 
+    Funciona con cualquier alfabeto de código (binario, ternario, letras,
+    dígitos, etc.): cada elemento de `codigo` es un símbolo del código.
+    Las palabras código deben formar un código prefijo (ninguna es prefijo
+    de otra) para que la decodificación sea única.
+ 
+    codigos:  lista de palabras código, p. ej. ["11", "01", "00", "10"].
+    codigo:   cadena (o secuencia) a decodificar.
+    alfabeto: símbolos fuente, en el mismo orden que `codigos`. Si se omite,
+              se usan "a", "b", "c", ... en orden.
+ 
+    Ejemplos:
+        decodificar_codigo(["11", "01", "00", "10"], "1100111001111001")
+        -> "acadbadb"
+        decodificar_codigo(["0", "10", "11"], "0101100")  # también binario
+        decodificar_codigo(["0", "1", "20", "21"], "2102001")  # ternario
+    """
+    if alfabeto is None:
+        if len(codigos) > 26:
+            raise ValueError("Con más de 26 códigos hay que indicar el alfabeto")
+        alfabeto = [chr(ord("a") + i) for i in range(len(codigos))]
+    if len(alfabeto) != len(codigos):
+        raise ValueError("El alfabeto y la lista de códigos deben tener igual longitud")
+ 
+    tabla = dict(zip(codigos, alfabeto))
+    mensaje = []
+    actual = ""
+    for simbolo in codigo:
+        actual += simbolo
+        if actual in tabla:
+            mensaje.append(tabla[actual])
+            actual = ""
+ 
+    if actual:
+        raise ValueError(f"Quedaron símbolos sin decodificar: {actual!r}")
+    return "".join(mensaje)
+
+
+def codificar_a_string(alfabeto: list[str], codigos: list[str], mensaje: str) -> str:
+    """Codifica `mensaje` con la lista de códigos y devuelve el resultado como string.
+    alfabeto: símbolos fuente; alfabeto[i] se codifica con codigos[i].
+    codigos:  lista de palabras código (por ej. la que devuelve Huffman o Shannon-Fano).
+    Ej: codificar_a_string(["A","B","C"], ["0","10","11"], "ABAC") -> "010011"
+    """
+    if len(alfabeto) != len(codigos):
+        raise ValueError("El alfabeto y la lista de códigos deben tener igual longitud")
+
+    tabla = dict(zip(alfabeto, codigos))
+    try:
+        return "".join(tabla[simbolo] for simbolo in mensaje)
+    except KeyError as e:
+        raise ValueError(f"El símbolo {e.args[0]!r} no pertenece al alfabeto") from None
+
+
+def decodificar_desde_string(alfabeto: list[str], codigos: list[str], codificado: str) -> str:
+    """Operación inversa de `codificar_a_string`."""
+    return decodificar_codigo(codigos, codificado, alfabeto)
+
+####################################################### FORMATEO ##################################################################
+
+# Formateo con punto flotante
+
+"""
+print("entropia: {h:.2f}".format(h = entropia))
+"""
+
+# Dar tamaño minimo 5 hacer que se centre a izquierda
+"""
+print(f"{'Entropia a priori:':<25}", [f"{entropia_a_priori:.4f}"])
+"""
+
+# Imprimir bytearray
+"""
+print("Bytearray: ", list(mi_bytearray), f"({len(mi_bytearray)} bytes)")
+"""
+
+# Loopear sobre argumentos para funcion 
+"""
+ejemplos = {
+    "1" : (prob_a_priori1, matriz1),
+    "31" : (prob_a_priori31, matriz31),
+    "32" : (prob_a_priori32, matriz32),
+    "6"  : (probabilidades_entrada6, matriz6)
+}
+
+for nombre, (prob, matriz) in ejemplos.items():
+    entropia_a_priori = get_entropia_lista_prob(prob)
+    entropia_a_posteriori = get_entropia_a_posteriori(prob, matriz)
+    print(nombre)
+    print(f"{'Entropia a priori:':<25}", [f"{entropia_a_priori:.4f}"])
+    print(f"{'Entropia a posteriori:':<25}", [f"{p:.4f}" for p in entropia_a_posteriori])"""
+
+# Se puede loopear sobre funciones para no tener que reescribir todos los print para cada funcion especifica 
+"""
+alfabeto = "abcdef"
+P = [0.4, 0.2, 0.2, 0.1, 0.05, 0.05]
+mensaje = "abacabadeffedcba"
+ 
+for nombre, funcion in (("Huffman", get_codificacion_huffman), ("Shannon-Fano", get_codificacion_shannon_fano)):
+    codigos = funcion(P)
+    datos = codificar_a_bytearray(alfabeto, codigos, mensaje)
+    recuperado = decodificar_bytearray(alfabeto, codigos, datos)
+    print(nombre)
+    print("  codigos:   ", codigos)
+    print("  bytes:     ", list(datos))
+    print("  bits:      ", "".join(format(b, "08b") for b in datos[1:]))
+    print("  decodificado:", recuperado, "->", "OK" if recuperado == mensaje else "ERROR")
+    print("  tasa de compresion:", round(get_tasa_compresion(mensaje, datos), 4))
+"""
+
+
 #################################################################################################################################
 #################################################################################################################################
 #################################################################################################################################
@@ -650,57 +1375,48 @@ def es_canal_determinante(prob: list[float], matriz: list[list[float]]):
 #################################################################################################################################
 #################################################################################################################################
 
-
-
-
-# Canal A: 2 entradas -> 4 salidas
+# Canal A : 2 entradas -> 4 salidas
 canal_a = [
     [0.7, 0.0, 0.3, 0.0],
     [0.2, 0.6, 0.0, 0.2],
 ]
 prob_a = [0.5, 0.5]
 
-# Canal B: 4 entradas -> 3 salidas
+# Canal B : 4 entradas -> 3 salidas
 canal_b = [
     [0.9, 0.0, 0.1],
     [0.0, 1.0, 0.0],
     [0.1, 0.1, 0.8],
     [0.0, 0.5, 0.5],
 ]
-prob_b = [0.25, 0.25, 0.25, 0.25]
 
-canal_reducido = [
-    [0.66, 0.03, 0.31],
-    [0.18, 0.7, 0.12]
-]
-prob_reducido = [0.5, 0.5]
+print("Canal A:")
+ruido_a = get_ruido(prob_a,canal_a)
+info_a = get_informacion_mutua(prob_a, canal_a)
+print(f"H(A/B): {ruido_a:.4f}")
+print(f"I(A,B): {info_a:.4f}")
 
+################################################################################
+### Como estan EN SERIE, la prob A POSTERIORI de A es la prob A PRIORI de B  ###
+################################################################################
+prob_salida_a = get_lista_probabilidades_salida(prob_a, canal_a)
+print(prob_salida_a)
 
-ejemplos = {
-    "a" : (prob_a, canal_a),
-    "b" : (prob_b, canal_b),
-    "red": (prob_reducido, canal_reducido)
-}
-
-for nombre, (prob, matriz) in ejemplos.items():
-    entropia_a_priori = get_entropia_lista_prob(prob)
-    entropia_salida = get_entropia_salida(prob, matriz)
-    print(nombre)
-    #print("a) Entropia a priori y posteriori:")
-    #print(f"{'Entropia a priori:':<25}", f"{entropia_a_priori:.4f}")
-    #print(f"{'b)Entropia salida:':<25}", f"{entropia_salida:.4f}")
-    sin_ruido = es_canal_sin_ruido(prob, matriz)
-    determinante = es_canal_determinante(prob, matriz)
+print("\nCanal B:")
+ruido_b = get_ruido(prob_salida_a,canal_b)
+info_b = get_informacion_mutua(prob_salida_a, canal_b)
+print(f"H(A/B): {ruido_b:.4f}")
+print(f"I(A,B): {info_b:.4f}")
 
 
-    ruido = get_ruido(prob, matriz)
-    perdida = get_perdida(prob, matriz)
-    print(f"{' Ruido/Equivocacion:':<25}", f"{ruido:.4f}")
-    #print(f"{' Perdida:':<25}", f"{perdida:.4f}")
-    
-    entropia_afin = get_entropia_afin(prob, matriz)
-    #print(f"{'e) Entropia afin:':<25}" , f"{entropia_afin:.4f}")
+print("\nCanal compuesto:")
+canal_compuesto = get_canal_compuesto(canal_a, canal_b)
+imprimir_matriz(canal_compuesto, ["A", "B"], ["0", "1", "2"])
 
-    info_mutua = get_informacion_mutua(prob, matriz)
-    print(f"{' Info mutua:':<25}" , f"{info_mutua:.4f}")
+ruido_c = get_ruido(prob_a,canal_compuesto)
+info_c = get_informacion_mutua(prob_a, canal_compuesto)
+print(f"H(A/B): {ruido_c:.4f}")
+print(f"I(A,B): {info_c:.4f}")
 
+print("D:")
+print("I(A,B)>=I(A,C): La informacion mutua del canal compuesto es menor al primer canal, este es el precio a pagar por la simplificacion")
