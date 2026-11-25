@@ -717,7 +717,7 @@ def codificar_a_bytearray(alfabeto: list[str], codigos: list[str], mensaje: str)
     return resultado
  
  
-def decodificar_bytearray(alfabeto: str, codigos: str, datos: str):
+def decodificar_bytearray(alfabeto: str, codigos: str, datos: bytearray):
     """Decodifica una secuencia de bytes generada por `codificar`.
     Los codigos son los que devuelve la codificacion de Huffman o Shannon Fano
     Devuelve el mensaje original como cadena de caracteres.
