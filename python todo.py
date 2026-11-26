@@ -364,7 +364,8 @@ def clasificar(listaCod : list[str], listaProb: list[float]):
         print("No es compacto")
 
 def get_lista_extension_n(alfabeto, probabilidades, N):
-    """Genera 2 listas de extension de orden n, una con las palabras y otra con las probabilidades"""
+    """return Prob_ext, codigos\n
+    Genera 2 listas de extension de orden n, una con las palabras y otra con las probabilidades"""
     extensiones = []
     probabilidades_ext = []
     M = len(alfabeto)
@@ -404,7 +405,7 @@ def imprimir_matriz(matriz: list[list[float]],
     # Una linea por fila
     for i, fila in enumerate(matriz):
         etiqueta = f"{etiquetas_filas[i]:^10}" if etiquetas_filas is not None else ""
-        print(etiqueta + "".join(f"{valor:^10.3f}" for valor in fila))
+        print(etiqueta + "".join(f"{valor:^10.4f}" for valor in fila))
 
 ####################################################### UNIDAD 4 ##################################################################
 
@@ -616,6 +617,21 @@ def get_bytearray_a_string(datos: bytearray) -> str:
     # Se descarta la fila del LRC (fila 0) y el bit de paridad (último bit)
     return "".join(chr(int("".join(map(str, fila[:7])), 2)) for fila in matriz[1:])
 
+def corregir_bytearray(datos: bytearray) -> bytearray:
+    """Corrige un bytearray protegido con VRC/LRC y lo devuelve como bytearray.
+    Mantiene el mismo formato (fila LRC al inicio y bit VRC al final de cada byte).
+    Devuelve un bytearray vacío si está vacío o no se puede corregir.
+    """
+    matriz = bytes_a_matriz(datos)
+    if not matriz:
+        return bytearray()
+
+    matriz_corregida = corregir_matriz_mensaje(matriz)
+    if matriz_corregida is None:
+        return bytearray()
+
+    return matriz_a_bytes(matriz_corregida)
+
 def corregir_bytearray_devolver_string(datos: bytearray) -> str:
     """Corrige mensaje en bytearray y lo devuelve como string\n
     solo llama a get_bytearray_a_string pero asi quiza es mas facil de encontrar"""
@@ -745,23 +761,46 @@ def decodificar_bytearray(alfabeto: str, codigos: str, datos: bytearray):
         raise ValueError("La secuencia de bits no corresponde a una codificación válida")
     return "".join(mensaje)
 
+def imprimir_bits_bytearray_matriz(datos: bytearray):
+    """Es para la matriz comprimida"""
+    print("".join(format(b, "08b") for b in datos[1:]))
+
 def imprimir_bits_bytearray(datos: bytearray):
     """Imprime el bytearray como secuencia de bits"""
-    print("Bits:      ", "".join(format(b, "08b") for b in datos[1:]))
+    print("".join(format(b, "08b") for b in datos))
 
 
-def get_tasa_compresion_bytearray(mensaje: str, codificado: bytearray) -> float:
-    """Calcula la tasa de compresión: tamaño original / tamaño comprimido.
+def get_tasa_compresion_bytearray(mensaje: str, codificado: bytearray) -> tuple[float, int, int]:
+    """Calcula la tasa de compresión (tamaño original / tamaño comprimido)
+    y la relación simplificada entre ambos tamaños.
+
     mensaje:    cadena con el mensaje original (se mide en bytes UTF-8, o sea
                 1 byte por carácter para texto ASCII).
     codificado: bytearray generado por `codificar_a_bytearray`. El primer byte
                 es el de relleno y NO se cuenta en el tamaño comprimido.
-    Un valor mayor que 1 indica que hubo compresión.
+
+    Devuelve (tasa_compresion, comprimido, original), donde `comprimido` y
+    `original` son los tamaños divididos por su máximo común divisor.
+    Por ejemplo, con 8 bytes originales y 4 comprimidos devuelve (2.0, 1, 2).
+    Una tasa mayor que 1 indica que hubo compresión.
     """
     datos_comprimidos = len(codificado) - 1  # se descuenta el byte de relleno
     if datos_comprimidos <= 0:
         raise ValueError("La secuencia de bytes está vacía")
-    return len(mensaje.encode("utf-8")) / datos_comprimidos
+
+    datos_originales = len(mensaje.encode("utf-8"))
+    tasa_compresion = datos_originales / datos_comprimidos
+
+    # Algoritmo de Euclides para obtener el máximo común divisor
+    a, b = datos_originales, datos_comprimidos
+    while b != 0:
+        a, b = b, a % b
+
+    comprimido = datos_comprimidos // a
+    original = datos_originales // a
+
+    return tasa_compresion, original, comprimido
+
 
 
 def get_tasa_compresion_str(mensaje: str, codificado: str, redondear_bytes: bool = False) -> float:
